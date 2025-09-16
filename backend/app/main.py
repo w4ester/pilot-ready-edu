@@ -2,8 +2,8 @@
 
 from fastapi import FastAPI
 
+from .api import api_router
 from .core.settings import get_settings
-from .routers import api_router
 
 settings = get_settings()
 
@@ -16,8 +16,7 @@ app = FastAPI(
 
 
 @app.on_event("startup")
-async def startup_event() -> None:
-    # Future startup hooks (database warm-up, telemetry, etc.) go here.
+async def startup_event() -> None:  # pragma: no cover - placeholder for future hooks
     _ = settings
 
 
