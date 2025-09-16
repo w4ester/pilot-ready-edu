@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Edinfinite API (Creation Station slice)
+  version: 0.1.0
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register teacher account
+      responses:
+        '201': { description: Registered }
+  /api/v1/auth/login:
+    post:
+      summary: Login (JWT)
+      responses:
+        '200': { description: Logged in }
+  /api/v1/auth/accept-invite:
+    get:
+      summary: Accept teacher invite token
+      responses:
+        '200': { description: Invite accepted }
+  /api/v1/classes:
+    get:
+      summary: List classes for current user
+      responses:
+        '200': { description: Classes listed }
+    post:
+      summary: Create class with default room + assistant
+      responses:
+        '201': { description: Class created }
+  /api/v1/classes/invite:
+    post:
+      summary: Create class join token for students
+      responses:
+        '201': { description: Invite created }
+  /api/v1/classes/join:
+    post:
+      summary: Join class via token
+      responses:
+        '200': { description: Joined }
+  /api/v1/classes/{class_id}/rooms:
+    post:
+      summary: Create additional room in class
+      responses:
+        '201': { description: Room created }
+  /api/v1/rooms/{room_id}/messages:
+    get:
+      summary: List messages (paged)
+      responses:
+        '200': { description: Messages listed }
+    post:
+      summary: Post message / trigger assistant
+      responses:
+        '201': { description: Message posted }
+  /api/v1/rooms/{room_id}/assistant:
+    get:
+      summary: Get assistant config
+      responses:
+        '200': { description: Assistant config }
+    post:
+      summary: Update assistant config
+      responses:
+        '200': { description: Assistant updated }
+  /api/v1/rooms/{room_id}/knowledge:
+    post:
+      summary: Attach/detach libraries
+      responses:
+        '200': { description: Knowledge updated }
+  /health/schema:
+    get:
+      summary: Return Alembic head
+      responses:
+        '200': { description: Healthy }
