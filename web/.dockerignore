@@ -1,0 +1,13 @@
+# web/.dockerignore
+node_modules/
+.vscode/
+.env
+.env.*
+.svelte-kit/
+build/
+playwright-report/
+test-results/
+blob-report/
+.git
+.gitignore
+*.map

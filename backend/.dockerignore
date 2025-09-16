@@ -1,0 +1,13 @@
+# backend/.dockerignore
+__pycache__/
+*.py[cod]
+*.log
+.env
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.git
+.gitignore
+# Keep Alembic migrations in the image
