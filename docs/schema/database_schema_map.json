@@ -1,0 +1,2978 @@
+{
+  "tables": [
+    {
+      "table_id": 1,
+      "table_name": "user_auth",
+      "purpose": "Stores user authentication credentials (1:1 with user_profile by shared id). Source of truth for email.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY, FK\u2192user_profile.id",
+          "description": "Shared PK with user_profile",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "email",
+          "type": "citext",
+          "constraints": "UNIQUE NOT NULL",
+          "description": "Login identifier; source of truth",
+          "references": ""
+        },
+        {
+          "name": "password",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Hashed (argon2/bcrypt)",
+          "references": ""
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Enable/disable account",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Row creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Row update (ms)",
+          "references": ""
+        },
+        {
+          "name": "last_login_at",
+          "type": "bigint(ms)",
+          "constraints": "nullable",
+          "description": "Last sign-in (ms)",
+          "references": ""
+        },
+        {
+          "name": "failed_attempts",
+          "type": "integer",
+          "constraints": "DEFAULT 0",
+          "description": "Failed login counter",
+          "references": ""
+        },
+        {
+          "name": "locked_until",
+          "type": "bigint(ms)",
+          "constraints": "nullable",
+          "description": "Lockout until (ms)",
+          "references": ""
+        },
+        {
+          "name": "auth_method",
+          "type": "text",
+          "constraints": "DEFAULT 'password'",
+          "description": "password|google|microsoft|clever|apple|saml",
+          "references": ""
+        },
+        {
+          "name": "requires_password_change",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Force reset on next login",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "one-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 2,
+      "table_name": "user_profile",
+      "purpose": "User profiles, roles, preferences. Email is display-only; source of truth in user_auth.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "User id",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "",
+          "description": "Display name",
+          "references": ""
+        },
+        {
+          "name": "email",
+          "type": "citext",
+          "constraints": "nullable, display-only",
+          "description": "Mirrors user_auth.email for UI only",
+          "references": "user_auth.email"
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "constraints": "",
+          "description": "teacher|student|admin (pilot)",
+          "references": ""
+        },
+        {
+          "name": "profile_image_url",
+          "type": "text",
+          "constraints": "",
+          "description": "Avatar URL/path",
+          "references": ""
+        },
+        {
+          "name": "last_active_at",
+          "type": "bigint(ms)",
+          "constraints": "",
+          "description": "Last activity (ms)",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Row creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Row update (ms)",
+          "references": ""
+        },
+        {
+          "name": "api_key",
+          "type": "text",
+          "constraints": "UNIQUE, nullable",
+          "description": "Per-user API key",
+          "references": ""
+        },
+        {
+          "name": "settings",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "User preferences",
+          "references": ""
+        },
+        {
+          "name": "info",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Additional profile metadata",
+          "references": ""
+        },
+        {
+          "name": "oauth_sub",
+          "type": "text",
+          "constraints": "UNIQUE",
+          "description": "OAuth subject identifier",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "one-to-one with user_auth.id"
+      ]
+    },
+    {
+      "table_id": 3,
+      "table_name": "user_settings",
+      "purpose": "Per-user defaults for models and UI preferences.",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY, FK\u2192user_profile.id",
+          "description": "One row per user",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "default_model",
+          "type": "varchar(100)",
+          "constraints": "DEFAULT 'gpt-oss:20B'",
+          "description": "Default chat model",
+          "references": ""
+        },
+        {
+          "name": "default_temperature",
+          "type": "double precision",
+          "constraints": "DEFAULT 0.7",
+          "description": "Sampling",
+          "references": ""
+        },
+        {
+          "name": "default_max_tokens",
+          "type": "integer",
+          "constraints": "DEFAULT 500",
+          "description": "Budget",
+          "references": ""
+        },
+        {
+          "name": "embedding_model",
+          "type": "varchar(100)",
+          "constraints": "DEFAULT 'embeddinggemma:300m'",
+          "description": "Default embedding model",
+          "references": ""
+        },
+        {
+          "name": "auto_save",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Autosave toggle",
+          "references": ""
+        },
+        {
+          "name": "auto_save_interval",
+          "type": "integer",
+          "constraints": "DEFAULT 30",
+          "description": "Autosave seconds",
+          "references": ""
+        },
+        {
+          "name": "theme",
+          "type": "varchar(20)",
+          "constraints": "DEFAULT 'light'",
+          "description": "UI theme",
+          "references": ""
+        },
+        {
+          "name": "preferences",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Additional preferences",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "one-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 4,
+      "table_name": "user_group",
+      "purpose": "Class/team container (owned by teacher).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Group id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Teacher/owner",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL; UNIQUE per owner (case-insensitive)",
+          "description": "Group name (lowercased)",
+          "references": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Description",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Arbitrary group data",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ],
+      "notes": [
+        "Replace any user_ids JSON with normalized user_group_member."
+      ]
+    },
+    {
+      "table_id": 5,
+      "table_name": "user_group_member",
+      "purpose": "Normalized group roster with roles per user per group.",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_group.id",
+          "description": "Group",
+          "references": "user_group.id"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Member",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "role_in_group",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "teacher|student|assistant|member",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Added (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_group.id",
+        "many-to-one with user_profile.id"
+      ],
+      "primary_key": [
+        "group_id",
+        "user_id"
+      ]
+    },
+    {
+      "table_id": 6,
+      "table_name": "class_room",
+      "purpose": "Rooms under a class/team (group-scoped).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Room id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "class_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_group.id",
+          "description": "Owning class/team",
+          "references": "user_group.id"
+        },
+        {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Creator",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL; UNIQUE (class_id, lower(name))",
+          "description": "Lowercased unique per class",
+          "references": ""
+        },
+        {
+          "name": "channel_type",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "e.g., 'general'|'project'",
+          "references": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Description",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Flexible data",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Permissions",
+          "references": ""
+        },
+        {
+          "name": "is_archived",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Archive flag",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_group.id",
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 7,
+      "table_name": "class_room_member",
+      "purpose": "Membership (subset of group roster) with one row per user per room.",
+      "columns": [
+        {
+          "name": "class_room_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_room.id",
+          "description": "Room",
+          "references": "class_room.id"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Member",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Added (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with class_room.id",
+        "many-to-one with user_profile.id"
+      ],
+      "primary_key": [
+        "class_room_id",
+        "user_id"
+      ]
+    },
+    {
+      "table_id": 8,
+      "table_name": "class_read_receipt",
+      "purpose": "Per-user last-read position in a room for unread counts.",
+      "columns": [
+        {
+          "name": "class_room_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_room.id",
+          "description": "Room",
+          "references": "class_room.id"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "User",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "last_read_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Last read (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with class_room.id",
+        "many-to-one with user_profile.id"
+      ],
+      "primary_key": [
+        "class_room_id",
+        "user_id"
+      ]
+    },
+    {
+      "table_id": 9,
+      "table_name": "user_chat",
+      "purpose": "Personal AI conversations; entire state in JSONB.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Chat id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "constraints": "",
+          "description": "Display title",
+          "references": ""
+        },
+        {
+          "name": "conversation",
+          "type": "jsonb",
+          "constraints": "NOT NULL",
+          "description": "Messages & state",
+          "references": ""
+        },
+        {
+          "name": "share_id",
+          "type": "text",
+          "constraints": "UNIQUE, nullable",
+          "description": "Public share key",
+          "references": ""
+        },
+        {
+          "name": "archived",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Archive flag",
+          "references": ""
+        },
+        {
+          "name": "pinned",
+          "type": "boolean",
+          "constraints": "DEFAULT false, nullable",
+          "description": "Pinned flag",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Lightweight metadata",
+          "references": ""
+        },
+        {
+          "name": "folder_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_folder.id",
+          "description": "Folder",
+          "references": "user_folder.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id",
+        "many-to-one with user_folder.id"
+      ]
+    },
+    {
+      "table_id": 10,
+      "table_name": "user_chat_tag",
+      "purpose": "Per-user chat tagging by name (pilot-friendly; can normalize later).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "tag_name",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Tag (denormalized string)",
+          "references": ""
+        },
+        {
+          "name": "chat_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_chat.id",
+          "description": "Chat",
+          "references": "user_chat.id"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Added (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_chat.id",
+        "many-to-one with user_profile.id"
+      ],
+      "indexes": [
+        "UNIQUE (user_id, chat_id, lower(tag_name))"
+      ]
+    },
+    {
+      "table_id": 11,
+      "table_name": "app_config",
+      "purpose": "Persistent application configuration (JSON).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "constraints": "PRIMARY KEY",
+          "description": "Primary key identifier",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "NOT NULL",
+          "description": "Configuration data payload",
+          "references": ""
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "constraints": "NOT NULL",
+          "description": "Config version",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp (ms)",
+          "references": ""
+        }
+      ]
+    },
+    {
+      "table_id": 12,
+      "table_name": "user_feedback",
+      "purpose": "Stores user feedback/ratings with optional snapshot of chat state.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Feedback id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Submitting user id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "constraints": "DEFAULT 0",
+          "description": "Feedback version number",
+          "references": ""
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "constraints": "",
+          "description": "Feedback type",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Rating details / payload",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata (e.g., arena, chat_id)",
+          "references": ""
+        },
+        {
+          "name": "snapshot",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Associated chat snapshot",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 13,
+      "table_name": "user_file",
+      "purpose": "Uploaded files and metadata used by RAG library.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "File id",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "hash",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "File hash/checksum",
+          "references": ""
+        },
+        {
+          "name": "filename",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Original filename",
+          "references": ""
+        },
+        {
+          "name": "path",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Storage path (local/S3/etc.)",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Extractor/processing payload (e.g., content)",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata (content_type, size, etc.)",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Permissions (RBAC)",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 14,
+      "table_name": "user_folder",
+      "purpose": "Organizes chats and other items (UI folders).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Folder id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "parent_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_folder.id",
+          "description": "Parent folder id (nested)",
+          "references": "user_folder.id"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Folder display name",
+          "references": ""
+        },
+        {
+          "name": "items",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Folder contents",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "is_expanded",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "UI expansion state",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "self-reference via parent_id",
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 15,
+      "table_name": "library",
+      "purpose": "Collections for RAG; access controls and metadata.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY, UNIQUE",
+          "description": "Collection id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Collection name",
+          "references": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "constraints": "",
+          "description": "Description",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Collection data",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "RBAC (read/write user/group ids)",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 16,
+      "table_name": "user_memory",
+      "purpose": "Lightweight, per-user memory snippets for assistants.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Memory id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Memory content",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 17,
+      "table_name": "class_message",
+      "purpose": "Room posts; supports public (all members) and private 1:1 (target_user_id) within the same room.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Message id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Author user id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "class_room_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_room.id",
+          "description": "Target room id",
+          "references": "class_room.id"
+        },
+        {
+          "name": "parent_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192class_message.id",
+          "description": "Thread parent id",
+          "references": "class_message.id"
+        },
+        {
+          "name": "target_user_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_profile.id",
+          "description": "Private 1:1 recipient inside room",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Message content",
+          "references": ""
+        },
+        {
+          "name": "data",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Additional message data",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Message metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id",
+        "many-to-one with class_room.id",
+        "self-reference via parent_id"
+      ]
+    },
+    {
+      "table_id": 18,
+      "table_name": "class_message_reaction",
+      "purpose": "Emoji/quick reactions to messages.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Reaction id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Reacting user id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "message_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_message.id",
+          "description": "Target message id",
+          "references": "class_message.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL; UNIQUE(message_id,user_id,name)",
+          "description": "Reaction name/emoji",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id",
+        "many-to-one with class_message.id"
+      ]
+    },
+    {
+      "table_id": 19,
+      "table_name": "created_model",
+      "purpose": "Creation Station for user-created model definitions (overrides + access control).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Model identifier",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "base_model_id",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Provider model ID string",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "UNIQUE per user (case-insensitive)",
+          "description": "Display name",
+          "references": ""
+        },
+        {
+          "name": "params",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Model parameters",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Permissions",
+          "references": ""
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Active flag",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 20,
+      "table_name": "created_prompt",
+      "purpose": "Creation Station of user-created prompt templates (normalize PK, unique command per user).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Prompt id",
+          "references": ""
+        },
+        {
+          "name": "command",
+          "type": "varchar(64)",
+          "constraints": "CHECK begins with '/' + UNIQUE per user (case-insensitive)",
+          "description": "Command key",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "constraints": "",
+          "description": "Prompt title",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Prompt body/template",
+          "references": ""
+        },
+        {
+          "name": "variables",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Param schema",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Permissions",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Last update timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 21,
+      "table_name": "user_tag",
+      "purpose": "User tags; composite primary key (id, user_id).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "constraints": "PK (composite)",
+          "description": "Normalized tag identifier",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "UNIQUE per user (case-insensitive)",
+          "description": "Display name",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "PK (composite), FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Tag metadata",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 22,
+      "table_name": "created_tool",
+      "purpose": "User-created tools with specs, sandboxing, and valves (permissions optional).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Tool id",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "",
+          "description": "Tool name",
+          "references": ""
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "constraints": "UNIQUE per user (case-insensitive)",
+          "description": "URL-safe key",
+          "references": ""
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "constraints": "DEFAULT 'python'",
+          "description": "Execution language",
+          "references": ""
+        },
+        {
+          "name": "entrypoint",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Callable entrypoint",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Tool body/content",
+          "references": ""
+        },
+        {
+          "name": "requirements",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Python requirements",
+          "references": ""
+        },
+        {
+          "name": "sandbox_profile",
+          "type": "text",
+          "constraints": "DEFAULT 'restricted' CHECK in ('restricted','networked','gpu')",
+          "description": "Sandbox mode",
+          "references": ""
+        },
+        {
+          "name": "timeout_ms",
+          "type": "integer",
+          "constraints": "DEFAULT 60000 CHECK 1..600000",
+          "description": "Execution timeout",
+          "references": ""
+        },
+        {
+          "name": "memory_limit_mb",
+          "type": "integer",
+          "constraints": "DEFAULT 512 CHECK 64..8192",
+          "description": "Memory limit",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "valves",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Control settings",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Permissions",
+          "references": ""
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Active flag",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 23,
+      "table_name": "created_tool_version",
+      "purpose": "Immutable snapshots of tool code/config for rollback & audit.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "tool_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192created_tool.id",
+          "description": "Tool id",
+          "references": "created_tool.id"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "constraints": "NOT NULL",
+          "description": "Version number",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Frozen code",
+          "references": ""
+        },
+        {
+          "name": "requirements",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Frozen dependencies",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Build metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with created_tool.id"
+      ],
+      "indexes": [
+        "UNIQUE (tool_id, version)"
+      ]
+    },
+    {
+      "table_id": 24,
+      "table_name": "model_tool",
+      "purpose": "Attach tools to model with order & config overrides.",
+      "columns": [
+        {
+          "name": "model_id",
+          "type": "uuid",
+          "constraints": "PK, FK\u2192created_model.id",
+          "description": "Model id",
+          "references": "created_model.id"
+        },
+        {
+          "name": "tool_id",
+          "type": "uuid",
+          "constraints": "PK, FK\u2192created_tool.id",
+          "description": "Tool id",
+          "references": "created_tool.id"
+        },
+        {
+          "name": "order_index",
+          "type": "integer",
+          "constraints": "nullable",
+          "description": "Execution order",
+          "references": ""
+        },
+        {
+          "name": "config",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Attachment-specific config",
+          "references": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Toggle",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with created_model.id",
+        "many-to-one with created_tool.id"
+      ],
+      "primary_key": [
+        "model_id",
+        "tool_id"
+      ]
+    },
+    {
+      "table_id": 25,
+      "table_name": "model_library",
+      "purpose": "Attach RAG libraries to model with retrieval config.",
+      "columns": [
+        {
+          "name": "model_id",
+          "type": "uuid",
+          "constraints": "PK, FK\u2192created_model.id",
+          "description": "Model id",
+          "references": "created_model.id"
+        },
+        {
+          "name": "library_id",
+          "type": "uuid",
+          "constraints": "PK, FK\u2192library.id",
+          "description": "Library id",
+          "references": "library.id"
+        },
+        {
+          "name": "order_index",
+          "type": "integer",
+          "constraints": "nullable",
+          "description": "Priority",
+          "references": ""
+        },
+        {
+          "name": "retrieval",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "k, filters, thresholds",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with created_model.id",
+        "many-to-one with library.id"
+      ],
+      "primary_key": [
+        "model_id",
+        "library_id"
+      ]
+    },
+    {
+      "table_id": 26,
+      "table_name": "user_identity",
+      "purpose": "Maps external SSO identities (Google/Microsoft/Clever/SAML/Apple) to local users.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner user",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "IdP name",
+          "references": ""
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Stable subject from IdP",
+          "references": ""
+        },
+        {
+          "name": "email",
+          "type": "citext",
+          "constraints": "nullable",
+          "description": "IdP email",
+          "references": ""
+        },
+        {
+          "name": "email_verified",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Verified by IdP",
+          "references": ""
+        },
+        {
+          "name": "raw_profile",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Raw claims",
+          "references": ""
+        },
+        {
+          "name": "is_primary",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Primary login method",
+          "references": ""
+        },
+        {
+          "name": "connected_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms()",
+          "description": "Linked timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "last_login_at",
+          "type": "bigint(ms)",
+          "constraints": "nullable",
+          "description": "Last SSO usage (ms)",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms()",
+          "description": "Row creation (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms() (trigger maintained)",
+          "description": "Row update (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 27,
+      "table_name": "organization",
+      "purpose": "Tenants (districts/schools) used for SSO routing, policy, and scoping.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Org id",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Display name",
+          "references": ""
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "constraints": "UNIQUE, nullable",
+          "description": "URL-friendly code",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Org metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms()",
+          "description": "ms",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms() (trigger maintained)",
+          "description": "ms",
+          "references": ""
+        }
+      ]
+    },
+    {
+      "table_id": 28,
+      "table_name": "organization_domain",
+      "purpose": "Maps email domains to organizations for SSO domain routing.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "organization_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192organization.id",
+          "description": "Org owner",
+          "references": "organization.id"
+        },
+        {
+          "name": "domain",
+          "type": "text",
+          "constraints": "UNIQUE lower(domain)",
+          "description": "Email domain",
+          "references": ""
+        },
+        {
+          "name": "verified",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Verified ownership",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms()",
+          "description": "ms",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms() (trigger maintained)",
+          "description": "ms",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with organization.id"
+      ]
+    },
+    {
+      "table_id": 29,
+      "table_name": "organization_idp",
+      "purpose": "Per-organization SSO provider configuration.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "organization_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192organization.id",
+          "description": "Org owner",
+          "references": "organization.id"
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "IdP name",
+          "references": ""
+        },
+        {
+          "name": "config",
+          "type": "jsonb",
+          "constraints": "NOT NULL",
+          "description": "Non-secret IdP config",
+          "references": ""
+        },
+        {
+          "name": "is_enabled",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Toggle SSO",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms()",
+          "description": "ms",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "NOT NULL DEFAULT now_ms() (trigger maintained)",
+          "description": "ms",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with organization.id"
+      ]
+    },
+    {
+      "table_id": 30,
+      "table_name": "user_artifact",
+      "purpose": "Durable educational outputs produced in chats or classes (lesson plans, worksheets, quizzes, code), with versioning and export.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Artifact id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "chat_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_chat.id",
+          "description": "Source personal chat",
+          "references": "user_chat.id"
+        },
+        {
+          "name": "group_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_group.id",
+          "description": "Linked class/team",
+          "references": "user_group.id"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Display title",
+          "references": ""
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "text/markdown, application/lesson-plan, etc.",
+          "references": ""
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Code language if applicable",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Primary content",
+          "references": ""
+        },
+        {
+          "name": "subject_area",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Subject tagging",
+          "references": ""
+        },
+        {
+          "name": "grade_level",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Grade tagging",
+          "references": ""
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "constraints": "DEFAULT 1 CHECK \u22651",
+          "description": "Version number",
+          "references": ""
+        },
+        {
+          "name": "parent_artifact_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_artifact.id",
+          "description": "Version lineage (previous)",
+          "references": "user_artifact.id"
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Additional metadata",
+          "references": ""
+        },
+        {
+          "name": "access_control",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "RBAC rules",
+          "references": ""
+        },
+        {
+          "name": "is_published",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Publish flag",
+          "references": ""
+        },
+        {
+          "name": "is_template",
+          "type": "boolean",
+          "constraints": "DEFAULT false",
+          "description": "Template flag",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Creation timestamp (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Update timestamp (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id",
+        "many-to-one with user_chat.id",
+        "many-to-one with user_group.id",
+        "self-reference via parent_artifact_id"
+      ]
+    },
+    {
+      "table_id": 31,
+      "table_name": "resource_shares",
+      "purpose": "Generalized sharing: whitelist any resource to a class/team or a user with permissions.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Share row id",
+          "references": ""
+        },
+        {
+          "name": "resource_type",
+          "type": "enum(resource_kind)",
+          "constraints": "NOT NULL",
+          "description": "tool|model|prompt|artifact|library|document",
+          "references": ""
+        },
+        {
+          "name": "resource_id",
+          "type": "uuid",
+          "constraints": "NOT NULL",
+          "description": "Target resource id",
+          "references": ""
+        },
+        {
+          "name": "grantee_group_id",
+          "type": "uuid",
+          "constraints": "FK\u2192user_group.id, XOR with grantee_user_id",
+          "description": "Class/team recipient",
+          "references": "user_group.id"
+        },
+        {
+          "name": "grantee_user_id",
+          "type": "uuid",
+          "constraints": "FK\u2192user_profile.id, XOR with grantee_group_id",
+          "description": "Individual recipient",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "permission",
+          "type": "text",
+          "constraints": "NOT NULL CHECK in ('view','use','edit','admin')",
+          "description": "Permission level",
+          "references": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "User who granted",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "expires_at",
+          "type": "bigint(ms)",
+          "constraints": "nullable",
+          "description": "Optional expiration",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_group.id",
+        "many-to-one with user_profile.id"
+      ],
+      "indexes": [
+        "UNIQUE (resource_type, resource_id, grantee_group_id, grantee_user_id)"
+      ],
+      "notes": [
+        "CHECK ( (grantee_group_id IS NULL) <> (grantee_user_id IS NULL) )",
+        "Compat view group_artifact_access selects artifact shares to groups."
+      ]
+    },
+    {
+      "table_id": 32,
+      "table_name": "class_assistant",
+      "purpose": "Binds an assistant configuration (model + prompt + tools) to a class_room.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Row id",
+          "references": ""
+        },
+        {
+          "name": "class_room_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_room.id",
+          "description": "Room",
+          "references": "class_room.id"
+        },
+        {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Owner/creator",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "model_id",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Either created_model.id or provider model id (string)",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Assistant display name",
+          "references": ""
+        },
+        {
+          "name": "system_prompt",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "System instructions",
+          "references": ""
+        },
+        {
+          "name": "temperature",
+          "type": "numeric",
+          "constraints": "DEFAULT 0.7 CHECK 0..2",
+          "description": "Sampling temperature",
+          "references": ""
+        },
+        {
+          "name": "invocation_mode",
+          "type": "text",
+          "constraints": "DEFAULT 'manual' CHECK in ('manual','on_mention','auto')",
+          "description": "Invocation mode",
+          "references": ""
+        },
+        {
+          "name": "tool_config",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Tool specs/valves",
+          "references": ""
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "constraints": "DEFAULT true",
+          "description": "Toggle",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with class_room.id",
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 33,
+      "table_name": "class_knowledge",
+      "purpose": "Attaches one or more RAG libraries to a class_room.",
+      "columns": [
+        {
+          "name": "class_room_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192class_room.id",
+          "description": "Room",
+          "references": "class_room.id"
+        },
+        {
+          "name": "library_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192library.id",
+          "description": "Library",
+          "references": "library.id"
+        },
+        {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_profile.id",
+          "description": "Binder user",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with class_room.id",
+        "many-to-one with library.id",
+        "many-to-one with user_profile.id"
+      ],
+      "primary_key": [
+        "class_room_id",
+        "library_id"
+      ]
+    },
+    {
+      "table_id": 34,
+      "table_name": "library_document",
+      "purpose": "Documents ingested into a library for RAG.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Document id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "library_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192library.id",
+          "description": "Owning library",
+          "references": "library.id"
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "upload|url|api",
+          "references": ""
+        },
+        {
+          "name": "uri",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "External or storage URI",
+          "references": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "constraints": "nullable",
+          "description": "Display title",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Document metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with library.id"
+      ]
+    },
+    {
+      "table_id": 35,
+      "table_name": "document_chunk",
+      "purpose": "Text chunks with pgvector embeddings for semantic + lexical hybrid search.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Chunk id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "document_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192library_document.id",
+          "description": "Parent document",
+          "references": "library_document.id"
+        },
+        {
+          "name": "chunk_index",
+          "type": "integer",
+          "constraints": "NOT NULL",
+          "description": "Chunk order (0-based)",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Chunk text",
+          "references": ""
+        },
+        {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "constraints": "NOT NULL",
+          "description": "pgvector embedding",
+          "references": ""
+        },
+        {
+          "name": "token_count",
+          "type": "integer",
+          "constraints": "nullable",
+          "description": "Token estimate",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Per-chunk metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "content_tsv",
+          "type": "tsvector",
+          "constraints": "GENERATED ALWAYS STORED",
+          "description": "Full-text index column",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with library_document.id"
+      ],
+      "indexes": [
+        "UNIQUE (document_id, chunk_index)",
+        "ivfflat (embedding vector_cosine_ops, lists=100)",
+        "GIN (content_tsv)"
+      ]
+    },
+    {
+      "table_id": 36,
+      "table_name": "library_file",
+      "purpose": "Join table mapping libraries to uploaded files.",
+      "columns": [
+        {
+          "name": "library_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192library.id",
+          "description": "Library",
+          "references": "library.id"
+        },
+        {
+          "name": "file_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192user_file.id",
+          "description": "User file",
+          "references": "user_file.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Linked (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with library.id",
+        "many-to-one with user_file.id"
+      ],
+      "primary_key": [
+        "library_id",
+        "file_id"
+      ]
+    },
+    {
+      "table_id": 37,
+      "table_name": "model_provider",
+      "purpose": "Registry of model providers (OpenAI, Ollama, Anthropic, Azure, etc.).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Provider id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "UNIQUE NOT NULL",
+          "description": "Display name",
+          "references": ""
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "saas|self-hosted|on-prem",
+          "references": ""
+        },
+        {
+          "name": "config",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Non-secret config",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated (ms)",
+          "references": ""
+        }
+      ]
+    },
+    {
+      "table_id": 38,
+      "table_name": "base_model",
+      "purpose": "Catalog of provider models and their capabilities (including embedding dims).",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "constraints": "PRIMARY KEY",
+          "description": "Model id (e.g., gpt-4o, llama3:8b)",
+          "references": ""
+        },
+        {
+          "name": "provider_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192model_provider.id",
+          "description": "Provider",
+          "references": "model_provider.id"
+        },
+        {
+          "name": "modality",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "chat|embeddings|vision|speech",
+          "references": ""
+        },
+        {
+          "name": "embedding_dim",
+          "type": "integer",
+          "constraints": "nullable",
+          "description": "Vector dimension if embedding",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "nullable",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with model_provider.id"
+      ]
+    },
+    {
+      "table_id": 39,
+      "table_name": "provider_credential",
+      "purpose": "API credentials for model providers (BYOM) scoped to user or organization.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "PRIMARY KEY",
+          "description": "Credential id (UUID)",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192user_profile.id",
+          "description": "Owner user (optional)",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "organization_id",
+          "type": "uuid",
+          "constraints": "nullable, FK\u2192organization.id",
+          "description": "Owner org (optional)",
+          "references": "organization.id"
+        },
+        {
+          "name": "provider_id",
+          "type": "uuid",
+          "constraints": "NOT NULL, FK\u2192model_provider.id",
+          "description": "Provider",
+          "references": "model_provider.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Credential label",
+          "references": ""
+        },
+        {
+          "name": "secret_ref",
+          "type": "text",
+          "constraints": "NOT NULL",
+          "description": "Reference to secret storage",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms()",
+          "description": "Created (ms)",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "DEFAULT now_ms() (trigger maintained)",
+          "description": "Updated (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_profile.id",
+        "many-to-one with organization.id",
+        "many-to-one with model_provider.id"
+      ]
+    },
+    {
+      "table_id": 40,
+      "table_name": "group_artifact_access (VIEW)",
+      "purpose": "Compatibility view over resource_shares for artifact\u2192group whitelisting.",
+      "columns": [
+        {
+          "name": "group_id",
+          "type": "uuid",
+          "constraints": "",
+          "description": "Class/team id",
+          "references": "user_group.id"
+        },
+        {
+          "name": "artifact_id",
+          "type": "uuid",
+          "constraints": "",
+          "description": "Artifact id",
+          "references": "user_artifact.id"
+        },
+        {
+          "name": "scope",
+          "type": "text",
+          "constraints": "DEFAULT 'group_ui'",
+          "description": "Sharing scope",
+          "references": ""
+        },
+        {
+          "name": "granted_by",
+          "type": "uuid",
+          "constraints": "",
+          "description": "User who granted",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "",
+          "description": "Created (ms)",
+          "references": ""
+        }
+      ],
+      "relationships": [
+        "many-to-one with user_group.id",
+        "many-to-one with user_artifact.id",
+        "many-to-one with user_profile.id"
+      ],
+      "notes": [
+        "SELECTs resource_shares where resource_type='artifact' and grantee_group_id IS NOT NULL."
+      ]
+    },
+    {
+      "table_id": 41,
+      "table_name": "user_function (DEPRECATED)",
+      "purpose": "Replaced by created_tool/created_tool_version; kept here for historical parity.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "constraints": "",
+          "description": "Function id",
+          "references": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "constraints": "",
+          "description": "Owner id",
+          "references": "user_profile.id"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "constraints": "",
+          "description": "Function name",
+          "references": ""
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "constraints": "",
+          "description": "Function type ('filter'|'action')",
+          "references": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "constraints": "",
+          "description": "Function/program content",
+          "references": ""
+        },
+        {
+          "name": "meta",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Metadata",
+          "references": ""
+        },
+        {
+          "name": "valves",
+          "type": "jsonb",
+          "constraints": "",
+          "description": "Control settings",
+          "references": ""
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "constraints": "",
+          "description": "Active flag",
+          "references": ""
+        },
+        {
+          "name": "is_global",
+          "type": "boolean",
+          "constraints": "",
+          "description": "Visible to all users flag",
+          "references": ""
+        },
+        {
+          "name": "created_at",
+          "type": "bigint(ms)",
+          "constraints": "",
+          "description": "Creation timestamp",
+          "references": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "bigint(ms)",
+          "constraints": "",
+          "description": "Update timestamp",
+          "references": ""
+        }
+      ],
+      "notes": [
+        "Do not implement; migrate to created_tool tables."
+      ]
+    },
+    {
+      "table_id": 42,
+      "table_name": "mcp_server",
+      "purpose": "Registry of Model Context Protocol servers (stdio or SSE).",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Server id", "references": ""},
+        {"name": "owner_user_id", "type": "uuid", "constraints": "nullable, FK\u2192user_profile.id", "description": "Owner", "references": "user_profile.id"},
+        {"name": "organization_id", "type": "uuid", "constraints": "nullable, FK\u2192organization.id", "description": "Org", "references": "organization.id"},
+        {"name": "name", "type": "text", "constraints": "NOT NULL", "description": "Display name", "references": ""},
+        {"name": "slug", "type": "text", "constraints": "nullable", "description": "URL key", "references": ""},
+        {"name": "transport", "type": "text", "constraints": "NOT NULL CHECK in ('stdio','sse')", "description": "Transport", "references": ""},
+        {"name": "command", "type": "text", "constraints": "nullable", "description": "Executable (stdio)", "references": ""},
+        {"name": "args", "type": "jsonb", "constraints": "nullable", "description": "Args (stdio)", "references": ""},
+        {"name": "env", "type": "jsonb", "constraints": "nullable", "description": "Env (stdio)", "references": ""},
+        {"name": "working_dir", "type": "text", "constraints": "nullable", "description": "CWD (stdio)", "references": ""},
+        {"name": "sse_url", "type": "text", "constraints": "nullable", "description": "Endpoint (sse)", "references": ""},
+        {"name": "headers", "type": "jsonb", "constraints": "nullable", "description": "HTTP headers (sse)", "references": ""},
+        {"name": "auth_kind", "type": "text", "constraints": "DEFAULT 'none' CHECK in ('none','bearer','basic','header')", "description": "Auth", "references": ""},
+        {"name": "credential_id", "type": "uuid", "constraints": "nullable, FK\u2192provider_credential.id", "description": "Secret ref", "references": "provider_credential.id"},
+        {"name": "timeouts", "type": "jsonb", "constraints": "nullable", "description": "Timeouts", "references": ""},
+        {"name": "is_enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "health_status", "type": "text", "constraints": "DEFAULT 'unknown' CHECK in ('unknown','healthy','unreachable','error')", "description": "Health", "references": ""},
+        {"name": "last_seen_at", "type": "bigint(ms)", "constraints": "nullable", "description": "Heartbeat", "references": ""},
+        {"name": "last_error", "type": "text", "constraints": "nullable", "description": "Last error", "references": ""},
+        {"name": "provider_kind", "type": "text", "constraints": "DEFAULT 'external' CHECK in ('internal','external')", "description": "Governance label", "references": ""},
+        {"name": "is_verified_provider", "type": "boolean", "constraints": "DEFAULT false", "description": "Trusted vendor", "references": ""},
+        {"name": "certification", "type": "jsonb", "constraints": "nullable", "description": "Audit/certification", "references": ""},
+        {"name": "meta", "type": "jsonb", "constraints": "nullable", "description": "Metadata", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""},
+        {"name": "updated_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms() (trigger maintained)", "description": "Updated", "references": ""}
+      ],
+      "indexes": ["UNIQUE (owner_user_id, lower(coalesce(slug, name)))", "INDEX (organization_id)"],
+      "relationships": ["many-to-one with user_profile.id", "many-to-one with organization.id", "many-to-one with provider_credential.id"]
+    },
+    {
+      "table_id": 43,
+      "table_name": "mcp_server_tool",
+      "purpose": "Tools exposed by an MCP server with JSON input schema.",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Row id", "references": ""},
+        {"name": "server_id", "type": "uuid", "constraints": "NOT NULL, FK\u2192mcp_server.id", "description": "Server", "references": "mcp_server.id"},
+        {"name": "name", "type": "text", "constraints": "NOT NULL", "description": "Tool name", "references": ""},
+        {"name": "description", "type": "text", "constraints": "nullable", "description": "Description", "references": ""},
+        {"name": "input_schema", "type": "jsonb", "constraints": "NOT NULL", "description": "JSON Schema", "references": ""},
+        {"name": "is_enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "last_discovered_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Discovery time", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""}
+      ],
+      "indexes": ["UNIQUE (server_id, lower(name))", "INDEX (server_id)"],
+      "relationships": ["many-to-one with mcp_server.id"]
+    },
+    {
+      "table_id": 44,
+      "table_name": "model_mcp_tool",
+      "purpose": "Attach a tool from a server to a created model with ordering and config.",
+      "columns": [
+        {"name": "model_id", "type": "uuid", "constraints": "PK (composite), FK\u2192created_model.id", "description": "Model", "references": "created_model.id"},
+        {"name": "server_id", "type": "uuid", "constraints": "PK (composite), FK\u2192mcp_server.id", "description": "Server", "references": "mcp_server.id"},
+        {"name": "tool_name", "type": "text", "constraints": "PK (composite)", "description": "Tool name", "references": ""},
+        {"name": "order_index", "type": "integer", "constraints": "nullable", "description": "Order", "references": ""},
+        {"name": "config", "type": "jsonb", "constraints": "nullable", "description": "Config", "references": ""},
+        {"name": "enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""}
+      ],
+      "relationships": ["many-to-one with created_model.id", "many-to-one with mcp_server.id"],
+      "primary_key": ["model_id", "server_id", "tool_name"]
+    },
+    {
+      "table_id": 45,
+      "table_name": "mcp_server_version",
+      "purpose": "Immutable snapshots of MCP server configuration.",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Row id", "references": ""},
+        {"name": "server_id", "type": "uuid", "constraints": "NOT NULL, FK\u2192mcp_server.id", "description": "Server", "references": "mcp_server.id"},
+        {"name": "version", "type": "integer", "constraints": "NOT NULL", "description": "Version number", "references": ""},
+        {"name": "spec", "type": "jsonb", "constraints": "NOT NULL", "description": "Frozen spec (command/args/env or sse_url/headers/auth/timeouts)", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""}
+      ],
+      "indexes": ["UNIQUE (server_id, version)"],
+      "relationships": ["many-to-one with mcp_server.id"]
+    },
+    {
+      "table_id": 46,
+      "table_name": "mcp_server_binding",
+      "purpose": "Bind an MCP server to a scope (global/org/class_room/model/assistant) with precedence.",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Row id", "references": ""},
+        {"name": "server_id", "type": "uuid", "constraints": "NOT NULL, FK\u2192mcp_server.id", "description": "Server", "references": "mcp_server.id"},
+        {"name": "organization_id", "type": "uuid", "constraints": "nullable, FK\u2192organization.id", "description": "Org scope", "references": "organization.id"},
+        {"name": "class_room_id", "type": "uuid", "constraints": "nullable, FK\u2192class_room.id", "description": "Room scope", "references": "class_room.id"},
+        {"name": "model_id", "type": "uuid", "constraints": "nullable, FK\u2192created_model.id", "description": "Model scope", "references": "created_model.id"},
+        {"name": "assistant_id", "type": "uuid", "constraints": "nullable, FK\u2192class_assistant.id", "description": "Assistant scope", "references": "class_assistant.id"},
+        {"name": "enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "precedence", "type": "integer", "constraints": "DEFAULT 0", "description": "Higher wins", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""},
+        {"name": "updated_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms() (trigger maintained)", "description": "Updated", "references": ""}
+      ],
+      "checks": ["At most one scope FK set (XOR)"],
+      "indexes": [
+        "UNIQUE (server_id, organization_id, class_room_id, model_id, assistant_id)",
+        "INDEX (server_id)",
+        "INDEX (server_id, precedence DESC)"
+      ],
+      "relationships": [
+        "many-to-one with mcp_server.id",
+        "many-to-one with organization.id",
+        "many-to-one with class_room.id",
+        "many-to-one with created_model.id",
+        "many-to-one with class_assistant.id"
+      ]
+    },
+    {
+      "table_id": 47,
+      "table_name": "platform_capability",
+      "purpose": "Catalog of built-in capabilities (web_search, classroom_rag, assistant_files).",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Capability id", "references": ""},
+        {"name": "key", "type": "text", "constraints": "NOT NULL (unique case-insensitive)", "description": "Stable key", "references": ""},
+        {"name": "description", "type": "text", "constraints": "nullable", "description": "Description", "references": ""},
+        {"name": "rollout_phase", "type": "text", "constraints": "DEFAULT 'experimental' CHECK in ('experimental','beta','ga','deprecated')", "description": "Lifecycle", "references": ""},
+        {"name": "guardrails", "type": "jsonb", "constraints": "nullable", "description": "Safety & limits", "references": ""},
+        {"name": "meta", "type": "jsonb", "constraints": "nullable", "description": "Metadata", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""},
+        {"name": "updated_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms() (trigger maintained)", "description": "Updated", "references": ""}
+      ],
+      "indexes": ["UNIQUE (lower(key))"]
+    },
+    {
+      "table_id": 48,
+      "table_name": "platform_capability_scope",
+      "purpose": "Bind a capability to a scope with precedence and optional time window.",
+      "columns": [
+        {"name": "id", "type": "uuid", "constraints": "PRIMARY KEY", "description": "Row id", "references": ""},
+        {"name": "capability_id", "type": "uuid", "constraints": "NOT NULL, FK\u2192platform_capability.id", "description": "Capability", "references": "platform_capability.id"},
+        {"name": "organization_id", "type": "uuid", "constraints": "nullable, FK\u2192organization.id", "description": "Org scope", "references": "organization.id"},
+        {"name": "class_room_id", "type": "uuid", "constraints": "nullable, FK\u2192class_room.id", "description": "Room scope", "references": "class_room.id"},
+        {"name": "model_id", "type": "uuid", "constraints": "nullable, FK\u2192created_model.id", "description": "Model scope", "references": "created_model.id"},
+        {"name": "assistant_id", "type": "uuid", "constraints": "nullable, FK\u2192class_assistant.id", "description": "Assistant scope", "references": "class_assistant.id"},
+        {"name": "scope_label", "type": "text", "constraints": "nullable", "description": "Admin label", "references": ""},
+        {"name": "enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "precedence", "type": "integer", "constraints": "DEFAULT 0", "description": "Higher wins", "references": ""},
+        {"name": "config", "type": "jsonb", "constraints": "nullable", "description": "Capability config", "references": ""},
+        {"name": "starts_at", "type": "bigint(ms)", "constraints": "nullable", "description": "Window start", "references": ""},
+        {"name": "ends_at", "type": "bigint(ms)", "constraints": "nullable", "description": "Window end", "references": ""},
+        {"name": "created_by", "type": "uuid", "constraints": "nullable, FK\u2192user_profile.id", "description": "Actor", "references": "user_profile.id"},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""},
+        {"name": "updated_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms() (trigger maintained)", "description": "Updated", "references": ""}
+      ],
+      "checks": ["At most one scope FK set (XOR)"],
+      "indexes": [
+        "UNIQUE (capability_id, organization_id, class_room_id, model_id, assistant_id)",
+        "INDEX (capability_id)",
+        "INDEX (capability_id, precedence DESC)"
+      ],
+      "relationships": [
+        "many-to-one with platform_capability.id",
+        "many-to-one with organization.id",
+        "many-to-one with class_room.id",
+        "many-to-one with created_model.id",
+        "many-to-one with class_assistant.id",
+        "many-to-one with user_profile.id"
+      ]
+    },
+    {
+      "table_id": 49,
+      "table_name": "model_capability",
+      "purpose": "Toggle/config a capability for a model (distinct from model_tool).",
+      "columns": [
+        {"name": "model_id", "type": "uuid", "constraints": "PK (composite), FK\u2192created_model.id", "description": "Model", "references": "created_model.id"},
+        {"name": "capability_id", "type": "uuid", "constraints": "PK (composite), FK\u2192platform_capability.id", "description": "Capability", "references": "platform_capability.id"},
+        {"name": "enabled", "type": "boolean", "constraints": "DEFAULT true", "description": "Toggle", "references": ""},
+        {"name": "precedence", "type": "integer", "constraints": "DEFAULT 0", "description": "Override priority", "references": ""},
+        {"name": "config", "type": "jsonb", "constraints": "nullable", "description": "Config", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""}
+      ],
+      "relationships": ["many-to-one with created_model.id", "many-to-one with platform_capability.id"],
+      "primary_key": ["model_id", "capability_id"]
+    },
+    {
+      "table_id": 50,
+      "table_name": "platform_feature_flag",
+      "purpose": "Global coarse feature toggles (separate from scoped capabilities).",
+      "columns": [
+        {"name": "key", "type": "text", "constraints": "PRIMARY KEY", "description": "Flag key", "references": ""},
+        {"name": "is_enabled", "type": "boolean", "constraints": "DEFAULT false", "description": "Enabled", "references": ""},
+        {"name": "effective_at", "type": "bigint(ms)", "constraints": "nullable", "description": "Activation time", "references": ""},
+        {"name": "sticky", "type": "boolean", "constraints": "DEFAULT false", "description": "One-way switch", "references": ""},
+        {"name": "description", "type": "text", "constraints": "nullable", "description": "Description", "references": ""},
+        {"name": "meta", "type": "jsonb", "constraints": "nullable", "description": "Metadata", "references": ""},
+        {"name": "created_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms()", "description": "Created", "references": ""},
+        {"name": "updated_at", "type": "bigint(ms)", "constraints": "DEFAULT now_ms() (trigger maintained)", "description": "Updated", "references": ""}
+      ],
+      "relationships": []
+    }
+  ]
+}

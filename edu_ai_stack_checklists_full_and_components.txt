@@ -1,0 +1,254 @@
+EDU AI Stack — First‑Run & Component Checklists (Conservative LTS, cleaned)
+Generated: 2025-09-16 04:00 UTC
+
+Notes on this edition
+- Kept your conservative stack (Python 3.11, FastAPI 0.110, Node 20, PG 15/16).
+- Added one missing step in the Appendix (apply patch_add_indexes.sql).
+- Tiny version nits: pgvector (Python) pinned to 0.4.1; Alembic works at 1.12.x but
+  1.16.5 is recommended (SQLAlchemy 2 diffs/bugfixes). Psycopg 3.1.x works; 3.2.x is recommended.
+
+=============================================================================
+A) FULL‑STACK FIRST‑RUN CHECKLIST (Versions + Steps)
+=============================================================================
+
+1) Version Pins (current LTS baseline)
+- Python:            3.11.x
+- FastAPI:           0.110.x   (lock >=0.110,<0.111)
+- Pydantic:          2.7.x     (>=2.6,<2.12 is fine; upgrade later as needed)
+- SQLAlchemy:        2.0.x
+- Alembic:           1.12.x    (>=1.13 preferred; 1.16.5 recommended)
+- psycopg:           3.1.x     (3.2.x recommended; install as psycopg[binary])
+- PostgreSQL:        15.x or 16.x (prefer 16.x if available)
+- pgvector (DB ext): 0.5.x     (CREATE EXTENSION vector; 0.8.x also OK)
+- pgvector (Python): 0.4.1
+- Node.js:           20.x LTS
+- SvelteKit:         2.x
+- Vite:              5.x
+- TypeScript:        5.4+
+- Playwright:        1.43.x
+- Ollama server:     0.1x (0.11.x recommended)
+
+2) Repo Layout (mono‑repo)
+repo/
+  db/ (canonical SQL + idempotent patches)
+    database_schema_consolidated_v2.sql
+    patch_add_mcp.sql
+    patch_add_platform_capabilities.sql
+    patch_add_indexes.sql
+  backend/ (FastAPI + SQLAlchemy + Alembic)
+  web/ (SvelteKit + Vite)
+  docs/schema/ (JSON map + CHANGELOG)
+  .github/workflows/ (CI)
+
+3) Canonical SQL + Patches (source of truth)
+- db/database_schema_consolidated_v2.sql
+- db/patch_add_mcp.sql
+- db/patch_add_platform_capabilities.sql
+- db/patch_add_indexes.sql
+- docs/schema/01_database_schema_map_updated_v2.json
+- docs/schema/CHANGELOG.md
+
+4) Alembic Baseline (recommended even on first run)
+  alembic init alembic
+  # set sqlalchemy.url in alembic.ini
+  alembic revision -m "0001_baseline_schema" --empty
+  # In upgrade():
+  #   - create extensions (pgcrypto, citext, vector)
+  #   - define helpers (now_ms, set_updated_at)
+  #   - op.execute(open('db/database_schema_consolidated_v2.sql').read())
+  #   - op.execute(open('db/patch_add_mcp.sql').read())
+  #   - op.execute(open('db/patch_add_platform_capabilities.sql').read())
+  #   - op.execute(open('db/patch_add_indexes.sql').read())   # ensure extra indexes ship
+  alembic upgrade head
+
+5) Docker Compose (local dev)
+  # Confirm these services exist in compose.yml; rename or mark TODO if not:
+  # db, redis, ollama, migrate (one-shot Alembic), api, worker, web
+  docker compose build
+  docker compose up -d db redis ollama
+  docker compose run --rm migrate
+  docker compose up -d api worker web
+
+6) Quick Verifications
+- Backend:  curl http://localhost:8000/health/schema  -> shows Alembic head
+            Visit http://localhost:8000/docs
+- Web:      http://localhost:5173  (or npm run dev inside web/)
+- Ollama:   curl http://localhost:11434/api/tags
+            docker compose exec ollama ollama pull gpt-oss:20b
+            docker compose exec ollama ollama pull embeddinggemma:300m
+
+7) Minimal Seed (optional, for demo)
+- Insert teacher (user_profile + user_auth)
+- Create class_room + class_assistant (default chat model: gpt-oss:20B)
+- Create library + library_document, ingest a file → document_chunk (vector(1536))
+- Enable capability classroom_rag for the class_room (platform_capability_scope)
+
+8) CI Guardrails
+- CI runs: alembic upgrade head (fresh DB) + pytest + Playwright API tests
+- /health/schema endpoint must return migration head
+- Block merges on drift/test failures
+
+=============================================================================
+B) DATABASE‑ONLY CHECKLIST (PostgreSQL + pgvector + Alembic)
+=============================================================================
+
+Versions
+- PostgreSQL 15.x or 16.x, pgvector 0.5.x, citext, pgcrypto
+- Alembic 1.12.x (>=1.13 preferred; 1.16.5 recommended)
+
+One‑time Setup (local or container)
+[ ] Ensure Postgres is running and accessible
+[ ] psql -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+[ ] psql -c "CREATE EXTENSION IF NOT EXISTS citext;"
+[ ] psql -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+Baseline via Alembic
+[ ] alembic init alembic
+[ ] Configure alembic.ini sqlalchemy.url (postgresql+psycopg://...)
+[ ] Create 0001_baseline_schema revision (empty) and in upgrade():
+    - create helper functions now_ms(), set_updated_at()
+    - execute db/database_schema_consolidated_v2.sql
+    - execute db/patch_add_mcp.sql
+    - execute db/patch_add_platform_capabilities.sql
+    - execute db/patch_add_indexes.sql
+[ ] alembic upgrade head
+
+Indexing & Vector
+[ ] document_chunk.embedding uses vector(1536)
+[ ] After bulk insert, build ANN:
+    CREATE INDEX IF NOT EXISTS idx_doc_chunk_emb
+      ON document_chunk USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+[ ] ANALYZE document_chunk;
+[ ] (Optional) Hybrid search:
+    CREATE INDEX IF NOT EXISTS idx_doc_chunk_text_gin
+      ON document_chunk USING gin (to_tsvector('english', content));
+
+Data Integrity
+[ ] Enforce FKs per consolidated SQL (avoid “string‑only” loose links)
+[ ] Ensure XOR checks on scope tables (e.g., mcp_server_binding, platform_capability_scope)
+[ ] Ensure UNIQUE composites match map (e.g., model_mcp_tool, resource_shares equivalents)
+
+Observability
+[ ] Enable slow query logging for tuning (optional)
+[ ] Periodic VACUUM/ANALYZE in cron or auto‑vacuum thresholds adjusted as needed
+
+=============================================================================
+C) API‑ONLY CHECKLIST (FastAPI + SQLAlchemy + Pydantic)
+=============================================================================
+
+Versions
+- Python 3.11.x, FastAPI 0.110.x, Pydantic 2.7.x, SQLAlchemy 2.0.x,
+  Alembic 1.12.x (>=1.13 preferred), psycopg 3.1.x (3.2.x rec), httpx 0.26.x (0.28.x rec)
+
+Structure (backend/)
+backend/
+  alembic.ini, alembic/
+  app/
+    api/        # routers by domain (capabilities.py, mcp.py, classes.py, ...)
+    db/         # engine/session
+      base.py   # Base = declarative_base()
+      session.py
+    models/     # SQLAlchemy ORM (no business ops)
+    schemas/    # Pydantic v2 models
+    services/   # business logic (capability resolver, MCP gateway, RAG ingest)
+    main.py     # FastAPI app
+
+Config
+[ ] DATABASE_URL=postgresql+psycopg://USER:PASS@db:5432/appdb
+[ ] OLLAMA_HOST=http://ollama:11434  (optional local models)
+[ ] OPENAI_API_KEY=...               (optional BYOM provider)
+
+Health & Migrations
+[ ] Implement /health/schema returning Alembic head string
+[ ] On startup, log DB connectivity; do not auto‑migrate in API process
+[ ] Use one‑shot migrate container or CI step to run alembic upgrade head
+
+Providers (optional tonight)
+[ ] Thin clients for OpenAI (chat/embeddings) and Ollama (embeddings/chat)
+[ ] Respect provider_credential.secret_ref indirection (no raw keys in DB)
+
+Background Work (optional)
+[ ] Celery + Redis for long‑running RAG ingestion/export tasks
+[ ] Keep API handlers fast; dispatch tasks and notify via WebSocket
+
+Testing
+[ ] pytest for services
+[ ] Playwright APIRequestContext smoke: GET /health/schema and one domain route
+
+Security
+[ ] Password hashing (argon2/bcrypt), citext emails, JWT/OAuth where applicable
+[ ] Admin routes guarded; never echo secrets
+
+=============================================================================
+D) WEB‑ONLY CHECKLIST (SvelteKit + Vite)
+=============================================================================
+
+Versions
+- Node 20.x LTS, SvelteKit 2.x, Vite 5.x, TypeScript 5.4+, Playwright 1.43.x
+
+Layout (web/)
+web/
+  src/
+    routes/
+    lib/
+    app.d.ts
+  static/
+  svelte.config.js
+  vite.config.ts
+  package.json
+  tests/   # Playwright
+
+Dev & Build
+[ ] npm ci
+[ ] npm run dev      # Vite dev server (SSR by SvelteKit)
+[ ] For Docker: use adapter‑node and run `node build/index.js`
+[ ] Set FASTAPI_URL=http://localhost:8000 (or internal service name in Compose)
+
+API Wiring (example)
+[ ] Create a small API client reading FASTAPI_URL
+[ ] Confirm /health/schema is displayed on an admin page
+
+Testing
+[ ] npx playwright install
+[ ] npx playwright test  (at least one API smoke + one page load)
+
+Security & UX
+[ ] Do not store tokens in localStorage; prefer httpOnly cookies if you add auth
+[ ] Handle 401s by redirecting to login; show clear error to students/teachers
+
+=============================================================================
+Appendix — Snippets (corrected)
+=============================================================================
+
+Postgres extensions (run once per database):
+  CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+  CREATE EXTENSION IF NOT EXISTS "citext";
+  CREATE EXTENSION IF NOT EXISTS "vector";
+
+Alembic baseline outline (upgrade() body):
+  op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+  op.execute("CREATE EXTENSION IF NOT EXISTS citext")
+  op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+  # helpers
+  op.execute("""
+  CREATE OR REPLACE FUNCTION now_ms() RETURNS bigint LANGUAGE sql STABLE AS $$
+    SELECT (extract(epoch from clock_timestamp())*1000)::bigint;
+  $$;""")
+  op.execute("""
+  CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
+  BEGIN NEW.updated_at := now_ms(); RETURN NEW; END; $$;""")
+  # schema + patches
+  op.execute(open("db/database_schema_consolidated_v2.sql","r",encoding="utf8").read())
+  op.execute(open("db/patch_add_mcp.sql","r",encoding="utf8").read())
+  op.execute(open("db/patch_add_platform_capabilities.sql","r",encoding="utf8").read())
+  op.execute(open("db/patch_add_indexes.sql","r",encoding="utf8").read())   # added here
+
+Vector index (after bulk insert):
+  CREATE INDEX IF NOT EXISTS idx_document_chunk_embedding
+    ON document_chunk USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+Docker Compose quick start (service names to confirm):
+  docker compose build
+  docker compose up -d db redis ollama
+  docker compose run --rm migrate
+  docker compose up -d api worker web

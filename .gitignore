@@ -1,0 +1,129 @@
+# Full-stack .gitignore for EDU AI
+# Covers: macOS, editors, Python backend (FastAPI/SQLAlchemy/Alembic),
+# Node/SvelteKit frontend (Vite/Playwright), Docker local data, and secrets.
+
+##############################################################################
+# OS / Filesystem
+##############################################################################
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+##############################################################################
+# Editors / IDEs
+##############################################################################
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*.code-workspace
+
+# Xcode (if ever present)
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+DerivedData/
+
+##############################################################################
+# Python (backend)
+##############################################################################
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.cache/
+.ipynb_checkpoints/
+
+# Alembic logs (keep migrations themselves tracked)
+backend/alembic/*.log
+
+##############################################################################
+# Node / SvelteKit / Vite (frontend)
+##############################################################################
+node_modules/
+web/node_modules/
+web/.svelte-kit/
+web/build/
+web/.vite/
+web/.vite/deps/
+*.tsbuildinfo
+
+# Playwright artifacts
+playwright-report/
+test-results/
+blob-report/
+web/playwright-report/
+web/test-results/
+
+##############################################################################
+# Logs
+##############################################################################
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+##############################################################################
+# Environment & Secrets
+##############################################################################
+.env
+.env.*
+*.env
+backend/.env
+web/.env
+secrets.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+
+##############################################################################
+# Docker local bind-mounts
+##############################################################################
+pgdata/
+docker-data/
+data/
+redis-data/
+ollama/
+.ollama/
+
+##############################################################################
+# Database dumps / exports
+##############################################################################
+*.sql
+*.sql.gz
+*.dump
+*.pgdump
+*.bak
+!db/*.sql
+
+##############################################################################
+# Generated docs/artifacts (toggle if you want to commit PDFs)
+##############################################################################
+docs/**/*.pdf
+# Remove the line above if you prefer to version PDFs in docs/
