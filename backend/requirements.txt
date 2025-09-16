@@ -1,4 +1,4 @@
-# Backend dependencies for EDU AI stack
+# Backend dependencies for Edinfinite AI stack
 # Target Python 3.11 runtime
 
 fastapi>=0.110,<0.111
@@ -11,3 +11,4 @@ pgvector==0.4.1
 httpx>=0.26,<0.29
 python-dotenv>=1.0,<2.0
 passlib[bcrypt]>=1.7,<2.0
+python-multipart>=0.0.9,<0.1
