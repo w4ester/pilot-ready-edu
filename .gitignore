@@ -95,6 +95,9 @@ pnpm-debug.log*
 *.env
 backend/.env
 web/.env
+!.env.example
+!backend/.env.example
+!web/.env.example
 secrets.*
 *.pem
 *.key
@@ -111,6 +114,7 @@ data/
 redis-data/
 ollama/
 .ollama/
+!db-init/*.sql
 
 ##############################################################################
 # Database dumps / exports
@@ -120,6 +124,7 @@ ollama/
 *.dump
 *.pgdump
 *.bak
+!db-init/*.sql
 !db/*.sql
 
 ##############################################################################

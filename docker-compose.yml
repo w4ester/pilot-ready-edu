@@ -1,0 +1,144 @@
+# docker-compose.yml — EDU AI Stack (generated 2025-09-16 04:47 UTC)
+# Conservative stack: PostgreSQL 16 + pgvector, Redis, Ollama, FastAPI API, SvelteKit dev server
+# Usage:
+#   1) cp .env.example .env    # keep .env out of git
+#   2) docker compose build
+#   3) docker compose up -d db redis ollama
+#   4) docker compose run --rm migrate     # once Alembic is set up
+#   5) docker compose up -d api web        # (add worker if you have one)
+
+version: "3.9"
+services:
+  db:
+    image: ankane/pgvector:pg16
+    # Avoid container_name to allow multiple projects via COMPOSE_PROJECT_NAME
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest   # pin to a 0.1x/0.11.x tag if you prefer
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      # Override for clarity if .env has host-based URL
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://app:app@db:5432/appdb}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # Optional Celery/RQ worker; update command to your worker entrypoint
+  worker:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://app:app@db:5432/appdb}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: python -m app.worker   # TODO: replace with your worker command
+    profiles: ["worker"]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+    env_file:
+      - .env
+    environment:
+      FASTAPI_URL: ${FASTAPI_URL:-http://api:8000}
+    depends_on:
+      api:
+        condition: service_started
+    volumes:
+      - ./web:/usr/src/app
+    working_dir: /usr/src/app
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
+  # One-shot migration runner (Alembic)
+  migrate:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://app:app@db:5432/appdb}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./db:/app/db:ro
+    working_dir: /app
+    command: alembic upgrade head
+    profiles: ["migrate"]
+
+volumes:
+  pgdata:
+  redis-data:
+  ollama-data:
