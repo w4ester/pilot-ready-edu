@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-SCHEMA_MAP = Path("01_database_schema_map_updated_v2.json")
+SCHEMA_MAP = Path("docs/schema/database_schema_map.json")
 
 
 def main() -> int:
