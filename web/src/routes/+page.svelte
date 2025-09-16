@@ -77,7 +77,7 @@
 
 <main class="page">
   <section class="card">
-    <h1>EDU AI Platform</h1>
+    <h1>Edinfinite Platform</h1>
     <p>API status: <strong>{status}</strong></p>
     <p>Alembic head: <code>{head}</code></p>
     {#if error}

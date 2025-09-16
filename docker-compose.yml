@@ -1,4 +1,4 @@
-# docker-compose.yml — EDU AI Stack (generated 2025-09-16 04:47 UTC)
+# docker-compose.yml — Edinfinite Stack (generated 2025-09-16 04:47 UTC)
 # Conservative stack: PostgreSQL 16 + pgvector, Redis, Ollama, FastAPI API, SvelteKit dev server
 # Usage:
 #   1) cp .env.example .env    # keep .env out of git
