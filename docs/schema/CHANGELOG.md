@@ -4,6 +4,10 @@
 - `document_chunk.embedding` now uses `vector(768)`.
 - ANN index switched from IVFFlat to HNSW (cosine) as `idx_document_chunk_embedding_hnsw`.
 - GIN index on `content_tsv` retained.
+ - Added API routers for demo readiness:
+   - `/api/v1/prompts` (list/create/update/test)
+   - `/api/v1/libraries` (list/create)
+   - `/api/v1/rooms` messages (`GET/POST /rooms/{roomId}/messages`), assistant (`GET/POST /class_rooms/{roomId}/assistant`), and knowledge attach (`POST /class_rooms/{roomId}/knowledge`).
 
 ## 2025-09-16
 - Added baseline consolidated schema `database_schema_consolidated.sql`.

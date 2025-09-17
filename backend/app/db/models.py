@@ -8,6 +8,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -128,4 +129,112 @@ class ModelLibrary(Base):
     library_id = Column(String, ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
     order_index = Column(Integer, nullable=True)
     retrieval = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+# ===================== Prompts =====================
+
+
+class CreatedPrompt(Base):
+    __tablename__ = "created_prompt"
+
+    id = Column(String, primary_key=True)
+    command = Column(String(64), nullable=False)
+    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    title = Column(Text, nullable=True)
+    content = Column(Text, nullable=False)
+    variables = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    access_control = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "command", name="ux_created_prompt_user_cmd"),
+    )
+
+
+# ===================== Rooms & Messaging =====================
+
+
+class ClassRoom(Base):
+    __tablename__ = "class_room"
+
+    id = Column(String, primary_key=True)
+    class_id = Column(String, ForeignKey("user_group.id", ondelete="CASCADE"), nullable=False)
+    created_by_user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    name = Column(Text, nullable=False)
+    channel_type = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
+    data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    access_control = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    is_archived = Column(Boolean, nullable=False, server_default=text("false"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassRoomMember(Base):
+    __tablename__ = "class_room_member"
+
+    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassReadReceipt(Base):
+    __tablename__ = "class_read_receipt"
+
+    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    last_read_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassMessage(Base):
+    __tablename__ = "class_message"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
+    parent_id = Column(String, ForeignKey("class_message.id", ondelete="CASCADE"), nullable=True)
+    target_user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=True)
+    content = Column(Text, nullable=False)
+    data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassMessageReaction(Base):
+    __tablename__ = "class_message_reaction"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    message_id = Column(String, ForeignKey("class_message.id", ondelete="CASCADE"), nullable=False)
+    name = Column(Text, nullable=False)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassAssistant(Base):
+    __tablename__ = "class_assistant"
+
+    id = Column(String, primary_key=True)
+    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
+    created_by_user_id = Column(String, ForeignKey("user_profile.id"), nullable=False)
+    model_id = Column(Text, nullable=False)
+    name = Column(Text, nullable=True)
+    system_prompt = Column(Text, nullable=True)
+    temperature = Column(Numeric, nullable=False, server_default=text("0.7"))
+    invocation_mode = Column(Text, nullable=False, server_default=text("'manual'"))
+    tool_config = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    is_active = Column(Boolean, nullable=False, server_default=text("true"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class ClassKnowledge(Base):
+    __tablename__ = "class_knowledge"
+
+    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    library_id = Column(String, ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
+    created_by_user_id = Column(String, ForeignKey("user_profile.id"), nullable=False)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
