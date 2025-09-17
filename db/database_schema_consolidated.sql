@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS document_chunk (
   document_id uuid NOT NULL REFERENCES library_document(id) ON DELETE CASCADE,
   chunk_index integer NOT NULL CHECK (chunk_index >= 0),
   content text NOT NULL,
-  embedding vector(1536) NOT NULL,
+  embedding vector(768) NOT NULL,
   token_count integer,
   meta jsonb,
   created_at bigint NOT NULL DEFAULT now_ms(),
@@ -326,8 +326,8 @@ CREATE TABLE IF NOT EXISTS document_chunk (
 );
 CREATE INDEX IF NOT EXISTS idx_document_chunk_doc ON document_chunk(document_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_document_chunk_unique ON document_chunk(document_id, chunk_index);
-CREATE INDEX IF NOT EXISTS idx_document_chunk_embedding
-  ON document_chunk USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_document_chunk_embedding_hnsw
+  ON document_chunk USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_document_chunk_tsv_gin
   ON document_chunk USING gin (content_tsv);
 

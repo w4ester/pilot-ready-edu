@@ -1,5 +1,10 @@
 # Schema Changelog
 
+## 2025-09-17
+- `document_chunk.embedding` now uses `vector(768)`.
+- ANN index switched from IVFFlat to HNSW (cosine) as `idx_document_chunk_embedding_hnsw`.
+- GIN index on `content_tsv` retained.
+
 ## 2025-09-16
 - Added baseline consolidated schema `database_schema_consolidated.sql`.
 - Added MCP tables, platform capability tables, and supporting index patch scripts.

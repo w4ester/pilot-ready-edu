@@ -7,10 +7,9 @@
 #   4) docker compose run --rm migrate     # once Alembic is set up
 #   5) docker compose up -d api web        # (add worker if you have one)
 
-version: "3.9"
 services:
   db:
-    image: ankane/pgvector:pg16
+    image: pgvector/pgvector:pg16
     # Avoid container_name to allow multiple projects via COMPOSE_PROJECT_NAME
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -135,7 +134,7 @@ services:
       - ./backend:/app
       - ./db:/app/db:ro
     working_dir: /app
-    command: alembic upgrade head
+    command: alembic -c alembic/alembic.ini upgrade head
     profiles: ["migrate"]
 
 volumes:

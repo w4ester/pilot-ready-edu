@@ -46,3 +46,4 @@ def downgrade() -> None:
     # Intentionally empty: we do not attempt destructive downgrades.
     # If you need a rollback, create a dedicated down migration.
     pass
+
