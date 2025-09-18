@@ -1,5 +1,33 @@
 Demo-Ready Checklist (End-to-end)
 
+Smoke Test Follow-ups (2025-09-17)
+
+- API container logs show `pydantic.errors.PydanticImportError` complaining that `BaseSettings` moved to `pydantic-settings`. Per Pydantic v2 docs, `BaseSettings` now lives in the separate `pydantic-settings` package and apps should `pip install pydantic-settings` and import with `from pydantic_settings import BaseSettings`. The runtime image likely predates that package in `requirements.txt`, so we need a `docker compose build --no-cache api` (and worker) once to bake the new dependency.
+- `/api/v1/tools` returns 500 because the `db` dependency provides a `_GeneratorContextManager`. In FastAPI the recommended Pydantic 2 style is to define the dependency as a plain generator (`def get_db(): db = SessionLocal(); try: yield db; finally: db.close()`); decorating it with `@contextmanager` causes FastAPI to inject the context manager object, which fails when we call `.query(...)`.
+- Pydantic 2 introduces protected namespaces (`model_`, `serializer_`, `__`) defined via `model_config = ConfigDict(protected_namespaces=('model_', 'serializer_', ...))`. Our schemas with `model_id` now hit that guard, so either disable it (`model_config = ConfigDict(protected_namespaces=())`) or rename the field (e.g. `assistant_model_id`). Decide which approach keeps API contracts stable before touching code.
+
+Pending Fix Plan (awaiting green light)
+
+Blockers (fix first)
+
+1. `backend/app/db/session.py` — FastAPI `yield` dependency merged. ✔
+2. `backend/app/api` schemas with `model_id` fields — now inherit from `ApiBaseModel`; warning resolved. ✔
+3. Router/legacy cleanup — removed `backend/app/routers/health.py` and `backend/app/db/tools.py`. ✔
+4. Backend image refresh — rebuilt `api` service after ORM UUID alignment. ✔
+5. Smoke verification — health, tools, models, prompts/test, libraries (list/create), room messages (GET/POST), assistant upsert, and knowledge attach all return expected 200/201 responses. ✔
+
+Verification Checklist
+
+- `GET /health/schema` → 200
+- `GET /api/v1/tools` with `X-Dev-User-Id` → 200
+- Log tail free of `pydantic` protected-namespace warnings
+
+Next Steps (post-fix)
+
+- Finish prompts/models UI wiring (per broader TODO)
+- Add auth endpoints (/auth/register, /auth/login, /auth/accept-invite)
+- Ensure classroom creation seeds default assistant and room
+
 1. Start Clean
 
 git pull latest changes; confirm git status -s is clean.
@@ -55,6 +83,8 @@ Wire UI screens to call:
 /api/v1/prompts, /api/v1/libraries.
 Messaging endpoints for demo room.
 Verify seeded teacher and sample tool appear in UI.
+
+Note: Share frontend screenshots and simple HTML snippets with the team before converting them into native frontend code tomorrow.
 7. Final Demo Prep
 
 Ensure docker compose up -d api before demo (backend hot-reloads).

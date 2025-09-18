@@ -14,7 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from .base import Base
@@ -30,8 +30,8 @@ _NOW_MS = text("now_ms()")
 class CreatedTool(Base):
     __tablename__ = "created_tool"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
     slug = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
     language = Column(Text, nullable=False, server_default=text("'python'"))
@@ -42,7 +42,6 @@ class CreatedTool(Base):
     timeout_ms = Column(Integer, nullable=False, server_default=text("60000"))
     memory_limit_mb = Column(Integer, nullable=False, server_default=text("512"))
     meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
-    specs = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     valves = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     access_control = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     is_active = Column(Boolean, nullable=False, server_default=text("true"))
@@ -64,8 +63,8 @@ class CreatedTool(Base):
 class CreatedToolVersion(Base):
     __tablename__ = "created_tool_version"
 
-    id = Column(String, primary_key=True)
-    tool_id = Column(String, ForeignKey("created_tool.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    tool_id = Column(UUID(as_uuid=False), ForeignKey("created_tool.id", ondelete="CASCADE"), nullable=False, index=True)
     version = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     requirements = Column(Text, nullable=True)
@@ -82,8 +81,8 @@ class CreatedToolVersion(Base):
 class Library(Base):
     __tablename__ = "library"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -96,8 +95,8 @@ class Library(Base):
 class CreatedModel(Base):
     __tablename__ = "created_model"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
     base_model_id = Column(Text, nullable=False, server_default=text("'gpt-oss:20B'"))
     name = Column(Text, nullable=False)
     params = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -114,22 +113,20 @@ class CreatedModel(Base):
 class ModelTool(Base):
     __tablename__ = "model_tool"
 
-    model_id = Column(String, ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
-    tool_id = Column(String, ForeignKey("created_tool.id", ondelete="CASCADE"), primary_key=True)
+    model_id = Column(UUID(as_uuid=False), ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
+    tool_id = Column(UUID(as_uuid=False), ForeignKey("created_tool.id", ondelete="CASCADE"), primary_key=True)
     order_index = Column(Integer, nullable=True)
     config = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     enabled = Column(Boolean, nullable=False, server_default=text("true"))
-    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
 class ModelLibrary(Base):
     __tablename__ = "model_library"
 
-    model_id = Column(String, ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
-    library_id = Column(String, ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
+    model_id = Column(UUID(as_uuid=False), ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
+    library_id = Column(UUID(as_uuid=False), ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
     order_index = Column(Integer, nullable=True)
     retrieval = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
-    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
 # ===================== Prompts =====================
@@ -138,9 +135,9 @@ class ModelLibrary(Base):
 class CreatedPrompt(Base):
     __tablename__ = "created_prompt"
 
-    id = Column(String, primary_key=True)
+    id = Column(UUID(as_uuid=False), primary_key=True)
     command = Column(String(64), nullable=False)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
     title = Column(Text, nullable=True)
     content = Column(Text, nullable=False)
     variables = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -159,9 +156,9 @@ class CreatedPrompt(Base):
 class ClassRoom(Base):
     __tablename__ = "class_room"
 
-    id = Column(String, primary_key=True)
-    class_id = Column(String, ForeignKey("user_group.id", ondelete="CASCADE"), nullable=False)
-    created_by_user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    class_id = Column(UUID(as_uuid=False), ForeignKey("user_group.id", ondelete="CASCADE"), nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
     name = Column(Text, nullable=False)
     channel_type = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
@@ -176,27 +173,27 @@ class ClassRoom(Base):
 class ClassRoomMember(Base):
     __tablename__ = "class_room_member"
 
-    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
 class ClassReadReceipt(Base):
     __tablename__ = "class_read_receipt"
 
-    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
     last_read_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
 class ClassMessage(Base):
     __tablename__ = "class_message"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
-    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
-    parent_id = Column(String, ForeignKey("class_message.id", ondelete="CASCADE"), nullable=True)
-    target_user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=True)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
+    parent_id = Column(UUID(as_uuid=False), ForeignKey("class_message.id", ondelete="CASCADE"), nullable=True)
+    target_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=True)
     content = Column(Text, nullable=False)
     data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -207,9 +204,9 @@ class ClassMessage(Base):
 class ClassMessageReaction(Base):
     __tablename__ = "class_message_reaction"
 
-    id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
-    message_id = Column(String, ForeignKey("class_message.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    message_id = Column(UUID(as_uuid=False), ForeignKey("class_message.id", ondelete="CASCADE"), nullable=False)
     name = Column(Text, nullable=False)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
@@ -217,9 +214,9 @@ class ClassMessageReaction(Base):
 class ClassAssistant(Base):
     __tablename__ = "class_assistant"
 
-    id = Column(String, primary_key=True)
-    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
-    created_by_user_id = Column(String, ForeignKey("user_profile.id"), nullable=False)
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False)
     model_id = Column(Text, nullable=False)
     name = Column(Text, nullable=True)
     system_prompt = Column(Text, nullable=True)
@@ -234,7 +231,17 @@ class ClassAssistant(Base):
 class ClassKnowledge(Base):
     __tablename__ = "class_knowledge"
 
-    class_room_id = Column(String, ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    library_id = Column(String, ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
-    created_by_user_id = Column(String, ForeignKey("user_profile.id"), nullable=False)
+    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
+    library_id = Column(UUID(as_uuid=False), ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+class UserProfile(Base):
+    __tablename__ = "user_profile"
+
+    id = Column(UUID(as_uuid=False), primary_key=True)
+
+
+class UserGroup(Base):
+    __tablename__ = "user_group"
+
+    id = Column(UUID(as_uuid=False), primary_key=True)
