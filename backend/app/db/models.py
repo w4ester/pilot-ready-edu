@@ -190,6 +190,54 @@ class LibraryFile(Base):
     )
 
 
+class UserChat(Base):
+    __tablename__ = "user_chat"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    owner_user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    channel_type = Column(Text, nullable=False, server_default=text("'direct'"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index("idx_user_chat_owner", "owner_user_id"),
+    )
+
+
+class UserChatTag(Base):
+    __tablename__ = "user_chat_tag"
+
+    chat_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_chat.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tag = Column(Text, primary_key=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class UserTag(Base):
+    __tablename__ = "user_tag"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    name = Column(Text, nullable=False)
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+
+
 class CreatedModel(Base):
     __tablename__ = "created_model"
 
@@ -441,6 +489,34 @@ class UserFile(Base):
     )
 
 
+class UserFolder(Base):
+    __tablename__ = "user_folder"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    parent_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_folder.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(Text, nullable=False)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index("idx_user_folder_user", "user_id"),
+        Index("idx_user_folder_parent", "parent_id"),
+    )
+
+
 class Organization(Base):
     __tablename__ = "organization"
 
@@ -514,3 +590,20 @@ class UserGroup(Base):
     __tablename__ = "user_group"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
+
+
+class UserGroupMember(Base):
+    __tablename__ = "user_group_member"
+
+    group_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_group.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_in_group = Column(Text, nullable=False)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
