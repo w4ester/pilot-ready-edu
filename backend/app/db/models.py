@@ -7,14 +7,16 @@ from sqlalchemy import (
     Boolean,
     Column,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
     Text,
     UniqueConstraint,
+    func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from .base import Base
@@ -239,6 +241,150 @@ class UserProfile(Base):
     __tablename__ = "user_profile"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
+
+
+class UserAuth(Base):
+    __tablename__ = "user_auth"
+
+    id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    email = Column(CITEXT, nullable=False, unique=True)
+    password = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, server_default=text("true"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    last_login_at = Column(BigInteger, nullable=True)
+    failed_attempts = Column(Integer, nullable=False, server_default=text("0"))
+    locked_until = Column(BigInteger, nullable=True)
+    auth_method = Column(Text, nullable=False, server_default=text("'password'"))
+    requires_password_change = Column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    default_model = Column(
+        String(100), nullable=False, server_default=text("'gpt-oss:20B'")
+    )
+    default_temperature = Column(Numeric, nullable=False, server_default=text("0.7"))
+    default_max_tokens = Column(Integer, nullable=False, server_default=text("500"))
+    embedding_model = Column(
+        String(100), nullable=False, server_default=text("'embeddinggemma:300m'")
+    )
+    auto_save = Column(Boolean, nullable=False, server_default=text("true"))
+    auto_save_interval = Column(Integer, nullable=False, server_default=text("30"))
+    theme = Column(String(20), nullable=False, server_default=text("'light'"))
+    preferences = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class UserIdentity(Base):
+    __tablename__ = "user_identity"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    provider = Column(Text, nullable=False)
+    subject = Column(Text, nullable=False)
+    email = Column(CITEXT, nullable=True)
+    email_verified = Column(Boolean, nullable=False, server_default=text("false"))
+    raw_profile = Column(JSONB, nullable=True)
+    is_primary = Column(Boolean, nullable=False, server_default=text("false"))
+    connected_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    last_login_at = Column(BigInteger, nullable=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="uq_user_identity_provider_subject"),
+    )
+
+
+class Organization(Base):
+    __tablename__ = "organization"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    name = Column(Text, nullable=False)
+    slug = Column(Text, nullable=True, unique=True)
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class OrganizationDomain(Base):
+    __tablename__ = "organization_domain"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    organization_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("organization.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    domain = Column(Text, nullable=False)
+    verified = Column(Boolean, nullable=False, server_default=text("false"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+Index(
+    "ux_org_domain_lower",
+    func.lower(OrganizationDomain.domain),
+    unique=True,
+)
+
+
+class OrganizationIdp(Base):
+    __tablename__ = "organization_idp"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    organization_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("organization.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    provider = Column(Text, nullable=False)
+    config = Column(JSONB, nullable=False)
+    is_enabled = Column(Boolean, nullable=False, server_default=text("true"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+Index(
+    "ux_org_provider_lower",
+    OrganizationIdp.organization_id,
+    func.lower(OrganizationIdp.provider),
+    unique=True,
+)
 
 
 class UserGroup(Base):
