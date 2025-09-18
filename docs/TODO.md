@@ -70,6 +70,8 @@ Auth & Org — DONE
 ORM: add user_auth, user_settings, user_identity, organization, organization_domain, organization_idp models mirroring DDL; functional indexes recreated.
 Library Docs & Files — DONE
 ORM: add user_file, library_document, document_chunk, library_file models with vector(768) embedding and associated indexes.
+Chat & Folders — DONE
+ORM: add user_group_member, user_folder, user_chat, user_chat_tag, user_tag models with indexes/constraints.
 Run docker compose run --rm migrate for any new migrations created during API work.
 4. Manual Endpoint Checks
 

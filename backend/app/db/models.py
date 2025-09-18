@@ -36,7 +36,11 @@ class CreatedTool(Base):
     __tablename__ = "created_tool"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     slug = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
     language = Column(Text, nullable=False, server_default=text("'python'"))
@@ -69,7 +73,12 @@ class CreatedToolVersion(Base):
     __tablename__ = "created_tool_version"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    tool_id = Column(UUID(as_uuid=False), ForeignKey("created_tool.id", ondelete="CASCADE"), nullable=False, index=True)
+    tool_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("created_tool.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     version = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     requirements = Column(Text, nullable=True)
@@ -87,7 +96,11 @@ class Library(Base):
     __tablename__ = "library"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -117,9 +130,7 @@ class LibraryDocument(Base):
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_library_document_library", "library_id"),
-    )
+    __table_args__ = (Index("idx_library_document_library", "library_id"),)
 
 
 class DocumentChunk(Base):
@@ -147,9 +158,7 @@ class DocumentChunk(Base):
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "chunk_index >= 0", name="ck_document_chunk_index_nonnegative"
-        ),
+        CheckConstraint("chunk_index >= 0", name="ck_document_chunk_index_nonnegative"),
         Index("idx_document_chunk_doc", "document_id"),
         Index(
             "idx_document_chunk_unique",
@@ -185,9 +194,53 @@ class LibraryFile(Base):
     )
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_library_file_file", "file_id"),
+    __table_args__ = (Index("idx_library_file_file", "file_id"),)
+
+
+class UserChat(Base):
+    __tablename__ = "user_chat"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
     )
+    owner_user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    channel_type = Column(Text, nullable=False, server_default=text("'direct'"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (Index("idx_user_chat_owner", "owner_user_id"),)
+
+
+class UserChatTag(Base):
+    __tablename__ = "user_chat_tag"
+
+    chat_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_chat.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tag = Column(Text, primary_key=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class UserTag(Base):
+    __tablename__ = "user_tag"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    name = Column(Text, nullable=False)
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
 
 
 # ===================== Artifacts & Sharing =====================
@@ -385,9 +438,7 @@ class BaseModel(Base):
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_base_model_provider", "provider_id"),
-    )
+    __table_args__ = (Index("idx_base_model_provider", "provider_id"),)
 
 
 class ProviderCredential(Base):
@@ -550,9 +601,7 @@ class ModelMcpTool(Base):
     enabled = Column(Boolean, nullable=False, server_default=text("true"))
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_model_mcp_tool_server", "server_id"),
-    )
+    __table_args__ = (Index("idx_model_mcp_tool_server", "server_id"),)
 
 
 class McpServerVersion(Base):
@@ -774,9 +823,7 @@ class ModelCapability(Base):
     config = Column(JSONB, nullable=True)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_model_capability_cap", capability_id),
-    )
+    __table_args__ = (Index("idx_model_capability_cap", capability_id),)
 
 
 class PlatformFeatureFlag(Base):
@@ -791,11 +838,16 @@ class PlatformFeatureFlag(Base):
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
+
 class CreatedModel(Base):
     __tablename__ = "created_model"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     base_model_id = Column(Text, nullable=False, server_default=text("'gpt-oss:20B'"))
     name = Column(Text, nullable=False)
     params = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -806,14 +858,24 @@ class CreatedModel(Base):
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
     tools = relationship("ModelTool", cascade="all, delete-orphan", lazy="selectin")
-    libraries = relationship("ModelLibrary", cascade="all, delete-orphan", lazy="selectin")
+    libraries = relationship(
+        "ModelLibrary", cascade="all, delete-orphan", lazy="selectin"
+    )
 
 
 class ModelTool(Base):
     __tablename__ = "model_tool"
 
-    model_id = Column(UUID(as_uuid=False), ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
-    tool_id = Column(UUID(as_uuid=False), ForeignKey("created_tool.id", ondelete="CASCADE"), primary_key=True)
+    model_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("created_model.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tool_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("created_tool.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     order_index = Column(Integer, nullable=True)
     config = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     enabled = Column(Boolean, nullable=False, server_default=text("true"))
@@ -822,8 +884,16 @@ class ModelTool(Base):
 class ModelLibrary(Base):
     __tablename__ = "model_library"
 
-    model_id = Column(UUID(as_uuid=False), ForeignKey("created_model.id", ondelete="CASCADE"), primary_key=True)
-    library_id = Column(UUID(as_uuid=False), ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
+    model_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("created_model.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    library_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("library.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     order_index = Column(Integer, nullable=True)
     retrieval = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
 
@@ -836,7 +906,11 @@ class CreatedPrompt(Base):
 
     id = Column(UUID(as_uuid=False), primary_key=True)
     command = Column(String(64), nullable=False)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     title = Column(Text, nullable=True)
     content = Column(Text, nullable=False)
     variables = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -856,8 +930,16 @@ class ClassRoom(Base):
     __tablename__ = "class_room"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    class_id = Column(UUID(as_uuid=False), ForeignKey("user_group.id", ondelete="CASCADE"), nullable=False)
-    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
+    class_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_group.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_by_user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     name = Column(Text, nullable=False)
     channel_type = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
@@ -872,16 +954,32 @@ class ClassRoom(Base):
 class ClassRoomMember(Base):
     __tablename__ = "class_room_member"
 
-    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    class_room_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_room.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
 class ClassReadReceipt(Base):
     __tablename__ = "class_read_receipt"
 
-    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), primary_key=True)
+    class_room_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_room.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     last_read_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
 
@@ -889,10 +987,26 @@ class ClassMessage(Base):
     __tablename__ = "class_message"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
-    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
-    parent_id = Column(UUID(as_uuid=False), ForeignKey("class_message.id", ondelete="CASCADE"), nullable=True)
-    target_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    class_room_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_room.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    parent_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_message.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    target_user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     content = Column(Text, nullable=False)
     data = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -904,8 +1018,16 @@ class ClassMessageReaction(Base):
     __tablename__ = "class_message_reaction"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id", ondelete="CASCADE"), nullable=False)
-    message_id = Column(UUID(as_uuid=False), ForeignKey("class_message.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    message_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_message.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     name = Column(Text, nullable=False)
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
@@ -914,8 +1036,14 @@ class ClassAssistant(Base):
     __tablename__ = "class_assistant"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), nullable=False)
-    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False)
+    class_room_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_room.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_by_user_id = Column(
+        UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False
+    )
     model_id = Column(Text, nullable=False)
     name = Column(Text, nullable=True)
     system_prompt = Column(Text, nullable=True)
@@ -930,10 +1058,22 @@ class ClassAssistant(Base):
 class ClassKnowledge(Base):
     __tablename__ = "class_knowledge"
 
-    class_room_id = Column(UUID(as_uuid=False), ForeignKey("class_room.id", ondelete="CASCADE"), primary_key=True)
-    library_id = Column(UUID(as_uuid=False), ForeignKey("library.id", ondelete="CASCADE"), primary_key=True)
-    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False)
+    class_room_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("class_room.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    library_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("library.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_by_user_id = Column(
+        UUID(as_uuid=False), ForeignKey("user_profile.id"), nullable=False
+    )
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
 class UserProfile(Base):
     __tablename__ = "user_profile"
 
@@ -1011,7 +1151,9 @@ class UserIdentity(Base):
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
     __table_args__ = (
-        UniqueConstraint("provider", "subject", name="uq_user_identity_provider_subject"),
+        UniqueConstraint(
+            "provider", "subject", name="uq_user_identity_provider_subject"
+        ),
     )
 
 
@@ -1037,8 +1179,34 @@ class UserFile(Base):
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
+    __table_args__ = (Index("idx_user_file_user", "user_id"),)
+
+
+class UserFolder(Base):
+    __tablename__ = "user_folder"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    parent_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_folder.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(Text, nullable=False)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
     __table_args__ = (
-        Index("idx_user_file_user", "user_id"),
+        Index("idx_user_folder_user", "user_id"),
+        Index("idx_user_folder_parent", "parent_id"),
     )
 
 
@@ -1180,9 +1348,7 @@ class UserChat(Base):
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (
-        Index("idx_user_chat_owner", "owner_user_id"),
-    )
+    __table_args__ = (Index("idx_user_chat_owner", "owner_user_id"),)
 
 
 class UserChatTag(Base):
@@ -1208,3 +1374,20 @@ class UserTag(Base):
     )
     name = Column(Text, nullable=False)
     meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+
+
+class UserGroupMember(Base):
+    __tablename__ = "user_group_member"
+
+    group_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_group.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role_in_group = Column(Text, nullable=False)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
