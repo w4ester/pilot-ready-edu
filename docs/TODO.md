@@ -68,6 +68,8 @@ POST /class_rooms/{roomId}/knowledge — DONE
 Provide stubbed assistant reply (log request or return placeholder). — DONE
 Auth & Org — DONE
 ORM: add user_auth, user_settings, user_identity, organization, organization_domain, organization_idp models mirroring DDL; functional indexes recreated.
+Library Docs & Files — DONE
+ORM: add user_file, library_document, document_chunk, library_file models with vector(768) embedding and associated indexes.
 Run docker compose run --rm migrate for any new migrations created during API work.
 4. Manual Endpoint Checks
 

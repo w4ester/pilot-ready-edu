@@ -15,11 +15,11 @@ status,table,orm_class
 [ ],user_chat,
 [ ],user_chat_tag,
 [ ],user_tag,
-[ ],user_file,
+[x],user_file,UserFile
 [x],library,Library
-[ ],library_document,
-[ ],document_chunk,
-[ ],library_file,
+[x],library_document,LibraryDocument
+[x],document_chunk,DocumentChunk
+[x],library_file,LibraryFile
 [x],created_tool,CreatedTool
 [x],created_tool_version,CreatedToolVersion
 [x],created_model,CreatedModel

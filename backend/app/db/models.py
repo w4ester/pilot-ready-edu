@@ -5,7 +5,9 @@ from __future__ import annotations
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Column,
+    Computed,
     ForeignKey,
     Index,
     Integer,
@@ -16,7 +18,8 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, JSONB, UUID
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB, TSVECTOR, UUID
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import relationship
 
 from .base import Base
@@ -92,6 +95,99 @@ class Library(Base):
     access_control = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+
+class LibraryDocument(Base):
+    __tablename__ = "library_document"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    library_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("library.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    source = Column(Text, nullable=True)
+    uri = Column(Text, nullable=True)
+    title = Column(Text, nullable=True)
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index("idx_library_document_library", "library_id"),
+    )
+
+
+class DocumentChunk(Base):
+    __tablename__ = "document_chunk"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    document_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("library_document.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    embedding = Column(Vector(768), nullable=False)
+    token_count = Column(Integer, nullable=True)
+    meta = Column(JSONB, nullable=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    content_tsv = Column(
+        TSVECTOR,
+        Computed("to_tsvector('english', coalesce(content, ''))", persisted=True),
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "chunk_index >= 0", name="ck_document_chunk_index_nonnegative"
+        ),
+        Index("idx_document_chunk_doc", "document_id"),
+        Index(
+            "idx_document_chunk_unique",
+            "document_id",
+            "chunk_index",
+            unique=True,
+        ),
+        Index(
+            "idx_document_chunk_embedding_hnsw",
+            text("embedding vector_cosine_ops"),
+            postgresql_using="hnsw",
+        ),
+        Index(
+            "idx_document_chunk_tsv_gin",
+            "content_tsv",
+            postgresql_using="gin",
+        ),
+    )
+
+
+class LibraryFile(Base):
+    __tablename__ = "library_file"
+
+    library_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("library.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    file_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_file.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index("idx_library_file_file", "file_id"),
+    )
 
 
 class CreatedModel(Base):
@@ -315,6 +411,33 @@ class UserIdentity(Base):
 
     __table_args__ = (
         UniqueConstraint("provider", "subject", name="uq_user_identity_provider_subject"),
+    )
+
+
+class UserFile(Base):
+    __tablename__ = "user_file"
+
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    hash = Column(Text, nullable=True)
+    filename = Column(Text, nullable=False)
+    path = Column(Text, nullable=True)
+    data = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    access_control = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index("idx_user_file_user", "user_id"),
     )
 
 
