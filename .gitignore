@@ -18,12 +18,14 @@ Icon?
 ##############################################################################
 .idea/
 *.iml
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 *.swp
 *.swo
 *.code-workspace
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 
 # Xcode (if ever present)
 *.xcuserstate
@@ -132,3 +134,11 @@ ollama/
 ##############################################################################
 docs/**/*.pdf
 # Remove the line above if you prefer to version PDFs in docs/
+
+# Local scratch assets (keep designs & tooling out of git)
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+screenshots_for_frontend/
+prompts_human_llm.md
+scripts/smoke.sh

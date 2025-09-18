@@ -34,6 +34,7 @@ Next Steps (post-fix)
 - Finish prompts/models UI wiring (per broader TODO)
 - Add auth endpoints (/auth/register, /auth/login, /auth/accept-invite)
 - Ensure classroom creation seeds default assistant and room
+- Stashed WIP (`stash@{0}`) for API/seed/frontend edits — restore with `git stash pop` when ready; use `git stash apply` to preview, `git stash drop` to remove.
 
 1. Start Clean
 
@@ -65,6 +66,8 @@ GET/POST /rooms/{roomId}/messages — DONE
 GET/POST /class_rooms/{roomId}/assistant — DONE (stubbed reply)
 POST /class_rooms/{roomId}/knowledge — DONE
 Provide stubbed assistant reply (log request or return placeholder). — DONE
+Auth & Org — DONE
+ORM: add user_auth, user_settings, user_identity, organization, organization_domain, organization_idp models mirroring DDL; functional indexes recreated.
 Run docker compose run --rm migrate for any new migrations created during API work.
 4. Manual Endpoint Checks
 

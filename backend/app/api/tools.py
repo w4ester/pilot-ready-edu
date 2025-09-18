@@ -1,7 +1,6 @@
-++ backend/app/api/tools.py
-"""Tool management endpoints for Creation Station."""
-
 from __future__ import annotations
+
+"""Tool management endpoints for Creation Station."""
 
 import os
 import uuid
@@ -29,13 +28,12 @@ def get_current_user(
 
 
 class ToolBase(BaseModel):
-    slug: str = Field(..., regex=r"^[a-zA-Z0-9_-]+$")
+    slug: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     name: str
     language: str = "python"
     entrypoint: str = "run"
     content: str
     requirements: Optional[str] = None
-    specs: Dict[str, Any] | None = None
     valves: Dict[str, Any] | None = None
     meta: Dict[str, Any] | None = None
     access_control: Dict[str, Any] | None = None
