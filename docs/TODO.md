@@ -34,6 +34,7 @@ Next Steps (post-fix)
 - Finish prompts/models UI wiring (per broader TODO)
 - Add auth endpoints (/auth/register, /auth/login, /auth/accept-invite)
 - Ensure classroom creation seeds default assistant and room
+- Stashed WIP (`stash@{0}`) for API/seed/frontend edits — restore with `git stash pop` when ready; use `git stash apply` to preview, `git stash drop` to remove.
 
 1. Start Clean
 
