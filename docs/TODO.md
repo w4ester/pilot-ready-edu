@@ -6,6 +6,12 @@ Smoke Test Follow-ups (2025-09-17)
 - `/api/v1/tools` returns 500 because the `db` dependency provides a `_GeneratorContextManager`. In FastAPI the recommended Pydantic 2 style is to define the dependency as a plain generator (`def get_db(): db = SessionLocal(); try: yield db; finally: db.close()`); decorating it with `@contextmanager` causes FastAPI to inject the context manager object, which fails when we call `.query(...)`.
 - Pydantic 2 introduces protected namespaces (`model_`, `serializer_`, `__`) defined via `model_config = ConfigDict(protected_namespaces=('model_', 'serializer_', ...))`. Our schemas with `model_id` now hit that guard, so either disable it (`model_config = ConfigDict(protected_namespaces=())`) or rename the field (e.g. `assistant_model_id`). Decide which approach keeps API contracts stable before touching code.
 
+Embedding Alignment (2025-09-18)
+
+- Measured `gemma:2b-embeddings` output (768-dim). Applied Alembic revision `0003_align_embedding_dimension.py` to convert `document_chunk.embedding` to `vector(768)` and recreate the `idx_document_chunk_embedding_hnsw` cosine index.
+- Rebuilt `api` image and reran smoke: `GET /health/schema` (2025-09-18T01:49:50Z) → 200; `GET /api/v1/tools` with dev header → 200 returning seeded `summarize_tool`. API logs remained clean.
+- Next backend focus: clear the remaining `[ ]` tables from `scripts/list_schema_mapping.py` (starting with user_auth/settings/identity, organization*, library_document/document_chunk, and MCP/platform capability tables).
+
 Pending Fix Plan (awaiting green light)
 
 Blockers (fix first)
@@ -21,6 +27,7 @@ Verification Checklist
 - `GET /health/schema` → 200
 - `GET /api/v1/tools` with `X-Dev-User-Id` → 200
 - Log tail free of `pydantic` protected-namespace warnings
+- `document_chunk.embedding` → `vector(768)` with `idx_document_chunk_embedding_hnsw` rebuilt
 
 Next Steps (post-fix)
 
