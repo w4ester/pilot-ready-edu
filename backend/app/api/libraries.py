@@ -30,6 +30,8 @@ class LibraryOut(BaseModel):
     name: str
     description: Optional[str] = None
     updated_at: int | None = None
+    data: Dict[str, Any]
+    meta: Dict[str, Any]
 
 
 @router.get("", response_model=list[LibraryOut])
@@ -44,7 +46,14 @@ def list_libraries(
         .all()
     )
     return [
-        LibraryOut(id=lib.id, name=lib.name, description=lib.description, updated_at=lib.updated_at)
+        LibraryOut(
+            id=lib.id,
+            name=lib.name,
+            description=lib.description,
+            updated_at=lib.updated_at,
+            data=lib.data or {},
+            meta=lib.meta or {},
+        )
         for lib in items
     ]
 
@@ -66,4 +75,11 @@ def create_library(
     )
     db.add(lib)
     db.commit()
-    return LibraryOut(id=lib.id, name=lib.name, description=lib.description, updated_at=lib.updated_at)
+    return LibraryOut(
+        id=lib.id,
+        name=lib.name,
+        description=lib.description,
+        updated_at=lib.updated_at,
+        data=lib.data or {},
+        meta=lib.meta or {},
+    )

@@ -1,26 +1,19 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI } from '$lib/api.creationstation';
-  
-  interface Prompt {
-    slug: string;
-    name: string;
-    command: string;
-    content: string;
-    access_level?: string;
-    created_at?: string;
-    updated_at?: string;
-  }
-  
-  let prompts: Prompt[] = [];
+  import { creationAPI, type PromptSummary } from '$lib/api.creationstation';
+
+  const preview = (content: string, limit = 160) =>
+    content.length > limit ? `${content.slice(0, limit)}…` : content;
+
+  let prompts: PromptSummary[] = [];
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
-  
-  $: filteredPrompts = prompts.filter(prompt => 
-    prompt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+
+  $: filteredPrompts = prompts.filter(prompt =>
+    (prompt.title ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     prompt.command.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    prompt.slug.toLowerCase().includes(searchQuery.toLowerCase())
+    prompt.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   onMount(async () => {
@@ -32,17 +25,6 @@
       loading = false;
     }
   });
-  
-  async function deletePrompt(slug: string) {
-    if (!confirm(`Are you sure you want to delete prompt "${slug}"?`)) return;
-    
-    try {
-      await creationAPI.prompts.delete(slug);
-      prompts = prompts.filter(p => p.slug !== slug);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete prompt');
-    }
-  }
 </script>
 
 <svelte:head>
@@ -122,40 +104,21 @@
         {#each filteredPrompts as prompt}
           <div class="prompt-card">
             <div class="prompt-header">
-              <h3 class="prompt-name">{prompt.name}</h3>
-              {#if prompt.access_level}
-                <span class="access-badge access-{prompt.access_level.toLowerCase()}">
-                  {prompt.access_level}
-                </span>
-              {/if}
-            </div>
-            
-            <div class="prompt-command">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="4 17 10 11 4 5"></polyline>
-                <line x1="12" y1="19" x2="20" y2="19"></line>
-              </svg>
-              <code>{prompt.command}</code>
-            </div>
-            
-            <p class="prompt-preview">{prompt.content.slice(0, 150)}{prompt.content.length > 150 ? '...' : ''}</p>
-            
-            <div class="prompt-actions">
-              <a href="/creation-station/prompts/{prompt.slug}/edit" class="btn-edit">
+              <h3 class="prompt-name">{prompt.title ?? prompt.command}</h3>
+              <div class="prompt-command">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
                 </svg>
-                Edit
-              </a>
-              <button on:click={() => deletePrompt(prompt.slug)} class="btn-delete">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Delete
-              </button>
+                <code>{prompt.command}</code>
+              </div>
             </div>
+
+            <p class="prompt-preview">{preview(prompt.content)}</p>
+
+            {#if prompt.updated_at}
+              <p class="prompt-updated">Updated {new Date(prompt.updated_at).toLocaleString()}</p>
+            {/if}
           </div>
         {/each}
       </div>
@@ -352,29 +315,6 @@
     color: white;
   }
 
-  .access-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .access-badge.access-private {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-  }
-
-  .access-badge.access-classroom {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-  }
-
-  .access-badge.access-public {
-    background: rgba(34, 197, 94, 0.2);
-    color: #4ade80;
-  }
-
   .prompt-command {
     display: flex;
     align-items: center;
@@ -398,49 +338,9 @@
     line-height: 1.5;
   }
 
-  .prompt-actions {
-    display: flex;
-    gap: 0.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(75, 85, 99, 0.3);
-  }
-
-  .btn-edit,
-  .btn-delete {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    padding: 0.5rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    cursor: pointer;
-  }
-
-  .btn-edit {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    color: #60a5fa;
-    text-decoration: none;
-  }
-
-  .btn-edit:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-  }
-
-  .btn-delete {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-  }
-
-  .btn-delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
+  .prompt-updated {
+    font-size: 0.75rem;
+    color: rgba(156, 163, 175, 0.9);
   }
 
   @media (max-width: 768px) {
