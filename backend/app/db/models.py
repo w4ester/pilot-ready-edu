@@ -1100,6 +1100,11 @@ class UserAuth(Base):
     requires_password_change = Column(
         Boolean, nullable=False, server_default=text("false")
     )
+    session_nonce = Column(
+        Text,
+        nullable=False,
+        server_default=text("encode(gen_random_bytes(16), 'hex')"),
+    )
 
 
 class UserSettings(Base):

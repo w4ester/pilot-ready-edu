@@ -142,3 +142,4 @@ docs/**/*.pdf
 screenshots_for_frontend/
 prompts_human_llm.md
 scripts/smoke.sh
+COMPLETE.md
