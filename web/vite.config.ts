@@ -13,9 +13,10 @@ export default defineConfig({
         secure: false
       },
       '/ollama': {
-        target: 'http://localhost:11434',
+        target: 'http://localhost:3434',
         changeOrigin: false,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/ollama/, '/api/v1/ollama')
       }
     }
   }

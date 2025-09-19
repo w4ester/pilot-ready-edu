@@ -104,6 +104,7 @@ Use these to ensure new UI calls align with the existing APIs.
 ## 6. Frontend Workflow Tips
 
 - Run `npm install` (or pnpm) inside `/web`, then `npm run dev -- --host --port 6407`.
+- Vite proxies `/api/**` and `/ollama/**` to the FastAPI dev server on port 3434 (the latter rewrites to `/api/v1/ollama/**`, keeping your Ollama instance private).
 - Wire API modules via `web/src/lib/api.creationstation.ts` (already references the endpoints above).
 - Stick to the seeded IDs while building; the backend enforces ownership and UUIDs.
 - Before PRs, re-run the smoke suite and regenerate `docs/schema/orm_coverage.*` if models shift.
