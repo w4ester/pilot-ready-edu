@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 
-export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+export const API_BASE = import.meta.env.VITE_API_URL ?? '';
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID;
 const IS_DEV = import.meta.env.DEV;
 
@@ -111,6 +111,8 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
     const error = await parseError(response);
     if (error.status === 401) {
       redirectToLogin();
+    } else if (error.status === 403 && (error.detail ?? '').toLowerCase().includes('csrf')) {
+      error.message = 'Your session expired. Refresh the page and try again.';
     }
     throw error;
   }

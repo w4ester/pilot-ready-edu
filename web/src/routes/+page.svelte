@@ -49,7 +49,7 @@
   };
 
   onMount(async () => {
-    const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+    const apiBase = import.meta.env.VITE_API_URL ?? '';
     try {
       const response = await fetch(`${apiBase}/health/schema`);
       if (!response.ok) {

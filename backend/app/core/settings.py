@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     session_cookie_name: str = "edinfinite_session"
     session_cookie_secure: bool = False
     session_cookie_samesite: str = "lax"
+    session_cookie_domain: str | None = None
+    session_max_age_seconds: int = 60 * 60 * 12
+    csrf_cookie_name: str = "csrf"
 
     model_config = SettingsConfigDict(
         env_file=".env",

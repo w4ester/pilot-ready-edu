@@ -74,9 +74,9 @@ services:
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 3434 --reload
     ports:
-      - "8000:8000"
+      - "3434:3434"
     restart: unless-stopped
 
   # Optional Celery/RQ worker; update command to your worker entrypoint
@@ -107,16 +107,16 @@ services:
     env_file:
       - .env
     environment:
-      FASTAPI_URL: ${FASTAPI_URL:-http://api:8000}
+      FASTAPI_URL: ${FASTAPI_URL:-http://api:3434}
     depends_on:
       api:
         condition: service_started
     volumes:
       - ./web:/usr/src/app
     working_dir: /usr/src/app
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "6407"]
     ports:
-      - "5173:5173"
+      - "6407:6407"
     restart: unless-stopped
 
   # One-shot migration runner (Alembic)

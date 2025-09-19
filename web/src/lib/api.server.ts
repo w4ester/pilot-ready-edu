@@ -68,6 +68,10 @@ export async function requestServer<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error('CSRF validation failed');
+    }
+
     let detail: string | undefined;
     const contentType = response.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {

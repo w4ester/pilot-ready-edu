@@ -8,7 +8,7 @@ Your fast lane for wiring the demo UI into the stabilized backend. Everything be
 
 - **Prereqs**: Docker Desktop, Node 20+, pnpm or npm, Python 3.11 (only if you want scripts outside Docker).
 - **Project env**: copy `.env.example` → `.env`, ensure
-  - `FASTAPI_URL=http://localhost:8000`
+  - `FASTAPI_URL=http://localhost:3434`
   - `DEV_USER_ID=99999999-9999-9999-9999-999999999999`
 - **Bring up services**:
   ```bash
@@ -18,8 +18,8 @@ Your fast lane for wiring the demo UI into the stabilized backend. Everything be
   ```
 - **Smoke sanity** (run after any backend change):
   ```bash
-  curl -s http://localhost:8000/health/schema
-  curl -s -H 'X-Dev-User-Id:99999999-9999-9999-9999-999999999999' http://localhost:8000/api/v1/tools
+curl -s http://localhost:3434/health/schema
+curl -s -H 'X-Dev-User-Id:99999999-9999-9999-9999-999999999999' http://localhost:3434/api/v1/tools
   ```
 
 ## 2. Seed Data Snapshot
@@ -103,7 +103,7 @@ Use these to ensure new UI calls align with the existing APIs.
 
 ## 6. Frontend Workflow Tips
 
-- Run `npm install` (or pnpm) inside `/web`, then `npm run dev -- --host --port 5173`.
+- Run `npm install` (or pnpm) inside `/web`, then `npm run dev -- --host --port 6407`.
 - Wire API modules via `web/src/lib/api.creationstation.ts` (already references the endpoints above).
 - Stick to the seeded IDs while building; the backend enforces ownership and UUIDs.
 - Before PRs, re-run the smoke suite and regenerate `docs/schema/orm_coverage.*` if models shift.
