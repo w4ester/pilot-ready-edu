@@ -20,8 +20,23 @@
 
   function sanitizeNext(raw: string | null): string {
     if (!raw) return '/tools';
-    const trimmed = raw.trim();
-    return trimmed.startsWith('/') ? trimmed : '/tools';
+    if (raw.startsWith('//') || raw.includes('://')) {
+      return '/tools';
+    }
+
+    if (typeof window === 'undefined') {
+      return raw.startsWith('/') ? raw : '/tools';
+    }
+
+    try {
+      const resolved = new URL(raw, window.location.origin);
+      if (resolved.origin !== window.location.origin) {
+        return '/tools';
+      }
+      return `${resolved.pathname}${resolved.search}` || '/tools';
+    } catch {
+      return '/tools';
+    }
   }
 
   function mapError(err: unknown): string {

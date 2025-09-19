@@ -1,12 +1,22 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import type { UserConfig } from 'vite';
+import { defineConfig } from 'vite';
 
-const config: UserConfig = {
+export default defineConfig({
   plugins: [sveltekit()],
   server: {
-    port: 5173,
-    host: true
+    host: true,
+    port: 6407,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3434',
+        changeOrigin: false,
+        secure: false
+      },
+      '/ollama': {
+        target: 'http://localhost:11434',
+        changeOrigin: false,
+        secure: false
+      }
+    }
   }
-};
-
-export default config;
+});

@@ -23,7 +23,8 @@ async function login(email: string, password: string): Promise<LoginResponse> {
     method: 'POST',
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
     },
     body: JSON.stringify({ email: email.trim(), password })
   });

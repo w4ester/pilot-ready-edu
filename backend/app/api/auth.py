@@ -10,6 +10,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from ..core.security import utc_now_ms, verify_password
+from ..core.settings import get_settings
 from ..db.models import UserAuth
 from ..db.session import get_db
 from .deps import get_current_user
@@ -18,6 +19,8 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 _MAX_FAILED_ATTEMPTS: Final[int] = 5
 _LOCKOUT_DURATION_MS: Final[int] = 15 * 60 * 1000  # 15 minutes
+
+settings = get_settings()
 
 
 class LoginRequest(BaseModel):
@@ -42,6 +45,7 @@ class MeResponse(BaseModel):
 def login(
     payload: LoginRequest,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> LoginResponse:
     """Authenticate a user with email/password and start a session."""
@@ -95,6 +99,18 @@ def login(
     request.session["auth_method"] = user.auth_method or "password"
     request.session["nv"] = new_session_nonce
 
+    csrf_token = secrets.token_urlsafe(32)
+    response.set_cookie(
+        key=settings.csrf_cookie_name,
+        value=csrf_token,
+        httponly=False,
+        secure=settings.session_cookie_secure,
+        samesite=settings.session_cookie_samesite,
+        max_age=settings.session_max_age_seconds,
+        domain=settings.session_cookie_domain,
+        path="/",
+    )
+
     return LoginResponse(
         user_id=user.id,
         email=user.email,
@@ -103,11 +119,17 @@ def login(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(request: Request) -> Response:
+def logout(request: Request, response: Response) -> Response:
     """Clear the current session."""
 
     request.session.clear()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.delete_cookie(
+        key=settings.csrf_cookie_name,
+        domain=settings.session_cookie_domain,
+        path="/",
+    )
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.get("/me", response_model=MeResponse)
