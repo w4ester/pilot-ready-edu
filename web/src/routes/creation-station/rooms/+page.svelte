@@ -2,29 +2,13 @@
   import { onMount } from 'svelte';
   import { creationAPI, type RoomSummary } from '$lib/api.creationstation';
 
-  const isSafeMode = (room: RoomSummary) => {
-    const meta = room.meta ?? {};
-    if (typeof meta.safe_mode_enabled === 'boolean') return meta.safe_mode_enabled;
-    if (meta.safety && typeof meta.safety === 'object' && 'safe_mode' in meta.safety) {
-      return Boolean(meta.safety.safe_mode);
-    }
-    return false;
-  };
-
-  const createdAt = (room: RoomSummary) =>
-    room.created_at ? new Date(room.created_at).toLocaleDateString() : '—';
 
   let rooms: RoomSummary[] = [];
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
 
-  $: filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (room.description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
+
   onMount(async () => {
     try {
       rooms = await creationAPI.rooms.list();
@@ -39,8 +23,7 @@
     if (!confirm(`Are you sure you want to archive room "${id}"?`)) return;
 
     try {
-      const updated = await creationAPI.rooms.archive(id);
-      rooms = rooms.map(c => (c.id === id ? updated : c));
+
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to archive room');
     }
@@ -138,15 +121,8 @@
                 {:else}
                   <span class="status-badge active">Active</span>
                 {/if}
-              </div>
-              {#if isSafeMode(room)}
-                <div class="safe-mode-indicator" title="Safe Mode Enabled">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                </div>
-              {/if}
-            </div>
+
+                
 
             {#if room.description}
               <p class="room-description">{room.description}</p>
@@ -164,15 +140,15 @@
               </div>
               <div class="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-                <span>Created {createdAt(room)}</span>
+                  <path d="M12 8v4l3 3"/>
+                  <circle cx="12" cy="12" r="9"/>
+
+                  
               </div>
             </div>
 
             <div class="room-actions">
-              <a href="/creation-station/room/{room.id}/manage" class="btn-manage">
+              <a href={`/creation-station/rooms/${room.id}`} class="btn-manage">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="3"/>
                   <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 9.96l4.24 4.24M18.36 14.18l4.24 4.24M1.54 14.18l4.24-4.24"/>
@@ -188,14 +164,8 @@
                   </svg>
                   Archive
                 </button>
-              {:else}
-                <button class="btn-restore" on:click={() => restoreRoom(room.id)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 4 23 10 17 10"/>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                  </svg>
-                  Restore
-                </button>
+
+              
               {/if}
             </div>
           </div>

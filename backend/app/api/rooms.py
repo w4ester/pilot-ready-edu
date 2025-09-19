@@ -5,11 +5,12 @@ from __future__ import annotations
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from ..core.security import utc_now_ms
 from ..db.models import (
     ClassAssistant,
     ClassKnowledge,
@@ -62,6 +63,41 @@ class RoomCreate(BaseModel):
     access_control: Dict[str, Any] | None = None
 
 
+class RoomCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
+    member_ids: list[str] | None = None
+
+
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
+
+
+def _room_summary(db: Session, room: ClassRoom) -> RoomSummary:
+    member_count = (
+        db.query(func.count(ClassRoomMember.user_id))
+        .filter(ClassRoomMember.class_room_id == room.id)
+        .scalar()
+    )
+    return RoomSummary(
+        id=room.id,
+        name=room.name,
+        description=room.description,
+        member_count=int(member_count or 0),
+        is_archived=room.is_archived,
+        created_at=room.created_at,
+    )
+
+
 @router.get("/rooms", response_model=list[RoomSummary])
 def list_rooms(
     db: Session = Depends(get_db),
@@ -83,12 +119,6 @@ def list_rooms(
         .group_by(ClassRoomMember.class_room_id)
         .all()
     )
-
-    summaries = []
-    for room in rooms:
-        summaries.append(_summarize_room(room, int(counts.get(room.id, 0))))
-
-    return summaries
 
 
 @router.post("/rooms", response_model=RoomSummary, status_code=status.HTTP_201_CREATED)
@@ -150,43 +180,6 @@ def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "room_access_denied")
 
     return room
-
-
-def _member_count(db: Session, room_id: str) -> int:
-    count = (
-        db.query(func.count(ClassRoomMember.user_id))
-        .filter(ClassRoomMember.class_room_id == room_id)
-        .scalar()
-    )
-    return int(count or 0)
-
-
-@router.post("/rooms/{room_id}/archive", response_model=RoomSummary)
-def archive_room(
-    room_id: str,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> RoomSummary:
-    room = _require_room_access(db, room_id, user_id)
-    room.is_archived = True
-    db.add(room)
-    db.commit()
-    db.refresh(room)
-    return _summarize_room(room, _member_count(db, room_id))
-
-
-@router.post("/rooms/{room_id}/restore", response_model=RoomSummary)
-def restore_room(
-    room_id: str,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> RoomSummary:
-    room = _require_room_access(db, room_id, user_id)
-    room.is_archived = False
-    db.add(room)
-    db.commit()
-    db.refresh(room)
-    return _summarize_room(room, _member_count(db, room_id))
 
 
 class MessageIn(BaseModel):
