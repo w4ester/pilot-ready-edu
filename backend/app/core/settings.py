@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     ollama_host: str = "http://ollama:11434"
     dev_user_id: str | None = None
+    session_secret_key: str = "dev-insecure-session-key-change-me"
+    session_cookie_name: str = "edinfinite_session"
+    session_cookie_secure: bool = False
+    session_cookie_samesite: str = "lax"
 
     model_config = SettingsConfigDict(
         env_file=".env",

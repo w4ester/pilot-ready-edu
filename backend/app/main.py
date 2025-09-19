@@ -1,6 +1,7 @@
 """FastAPI application entry point."""
 
 from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
 
 from .api import api_router
 from .core.settings import get_settings
@@ -18,6 +19,16 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event() -> None:  # pragma: no cover - placeholder for future hooks
     _ = settings
+
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret_key,
+    session_cookie=settings.session_cookie_name,
+    https_only=settings.session_cookie_secure,
+    same_site=settings.session_cookie_samesite,
+    max_age=60 * 60 * 12,
+)
 
 
 app.include_router(api_router)

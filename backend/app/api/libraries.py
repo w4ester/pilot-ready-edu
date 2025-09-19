@@ -2,28 +2,19 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..db.models import Library
 from ..db.session import get_db
+from .deps import get_current_user
 
 
 router = APIRouter(prefix="/api/v1/libraries", tags=["libraries"])
-
-
-def get_current_user(
-    dev_user_id: Optional[str] = Header(None, alias="X-Dev-User-Id")
-) -> str:
-    user_id = dev_user_id or os.getenv("DEV_USER_ID")
-    if not user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing_user_id")
-    return user_id
 
 
 class LibraryIn(BaseModel):
@@ -76,4 +67,3 @@ def create_library(
     db.add(lib)
     db.commit()
     return LibraryOut(id=lib.id, name=lib.name, description=lib.description, updated_at=lib.updated_at)
-
