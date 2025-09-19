@@ -15,6 +15,7 @@ from ..db.models import (
     ClassKnowledge,
     ClassMessage,
     ClassRoom,
+    ClassRoomMember,
     Library,
 )
 from ..db.session import get_db
@@ -30,6 +31,28 @@ def get_current_user(
     if not user_id:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing_user_id")
     return user_id
+
+
+def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
+    room = db.query(ClassRoom).filter(ClassRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "room_not_found")
+
+    if room.created_by_user_id == user_id:
+        return room
+
+    membership = (
+        db.query(ClassRoomMember)
+        .filter(
+            ClassRoomMember.class_room_id == room_id,
+            ClassRoomMember.user_id == user_id,
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "room_access_denied")
+
+    return room
 
 
 class MessageIn(BaseModel):
@@ -56,10 +79,7 @@ def list_messages(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ) -> list[MessageOut]:
-    # Ensure room exists (and in real app, user has access)
-    room = db.query(ClassRoom).filter(ClassRoom.id == room_id).first()
-    if not room:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "room_not_found")
+    _require_room_access(db, room_id, user_id)
 
     msgs = (
         db.query(ClassMessage)
@@ -88,9 +108,7 @@ def post_message(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ) -> MessageOut:
-    room = db.query(ClassRoom).filter(ClassRoom.id == room_id).first()
-    if not room:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "room_not_found")
+    _require_room_access(db, room_id, user_id)
 
     msg = ClassMessage(
         id=str(uuid.uuid4()),
@@ -141,6 +159,8 @@ def get_assistant(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ) -> AssistantOut:
+    _require_room_access(db, room_id, user_id)
+
     asst = (
         db.query(ClassAssistant)
         .filter(ClassAssistant.class_room_id == room_id)
@@ -168,6 +188,8 @@ def upsert_assistant(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    _require_room_access(db, room_id, user_id)
+
     # Upsert assistant for room
     asst = (
         db.query(ClassAssistant)
@@ -216,18 +238,22 @@ def attach_knowledge(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    # Validate room
-    room = db.query(ClassRoom).filter(ClassRoom.id == room_id).first()
-    if not room:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "room_not_found")
+    _require_room_access(db, room_id, user_id)
 
-    # Validate libraries exist
-    existing = {l.id for l in db.query(Library).filter(Library.id.in_(payload.library_ids)).all()}
-    missing = [lid for lid in payload.library_ids if lid not in existing]
+    owned_libraries = {
+        lib.id
+        for lib in (
+            db.query(Library)
+            .filter(Library.user_id == user_id)
+            .filter(Library.id.in_(payload.library_ids))
+            .all()
+        )
+    }
+    missing = [lid for lid in payload.library_ids if lid not in owned_libraries]
 
     attached = 0
     for lid in payload.library_ids:
-        if lid not in existing:
+        if lid not in owned_libraries:
             continue
         db.merge(
             ClassKnowledge(
@@ -239,4 +265,3 @@ def attach_knowledge(
         attached += 1
     db.commit()
     return {"attached": attached, "missing": missing}
-

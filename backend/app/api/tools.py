@@ -54,9 +54,13 @@ class ToolOut(BaseModel):
 
 
 @router.get("", response_model=list[ToolOut])
-def list_tools(db: Session = Depends(get_db)) -> list[ToolOut]:
+def list_tools(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> list[ToolOut]:
     items = (
         db.query(CreatedTool)
+        .filter(CreatedTool.user_id == user_id)
         .order_by(CreatedTool.updated_at.desc())
         .all()
     )
