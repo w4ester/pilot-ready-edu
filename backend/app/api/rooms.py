@@ -17,6 +17,8 @@ from ..db.models import (
     ClassRoom,
     ClassRoomMember,
     Library,
+    UserGroup,
+    UserGroupMember,
 )
 from ..db.session import get_db
 from .deps import get_current_user
@@ -32,6 +34,32 @@ class RoomSummary(BaseModel):
     member_count: int
     is_archived: bool
     created_at: int | None = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any]
+    meta: Dict[str, Any]
+
+
+def _summarize_room(room: ClassRoom, member_count: int) -> RoomSummary:
+    return RoomSummary(
+        id=room.id,
+        name=room.name,
+        description=room.description,
+        member_count=member_count,
+        is_archived=room.is_archived,
+        created_at=room.created_at,
+        channel_type=room.channel_type,
+        data=room.data or {},
+        meta=room.meta or {},
+    )
+
+
+class RoomCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
 
 
 @router.get("/rooms", response_model=list[RoomSummary])
@@ -58,18 +86,48 @@ def list_rooms(
 
     summaries = []
     for room in rooms:
-        summaries.append(
-            RoomSummary(
-                id=room.id,
-                name=room.name,
-                description=room.description,
-                member_count=int(counts.get(room.id, 0)),
-                is_archived=room.is_archived,
-                created_at=room.created_at,
-            )
-        )
+        summaries.append(_summarize_room(room, int(counts.get(room.id, 0))))
 
     return summaries
+
+
+@router.post("/rooms", response_model=RoomSummary, status_code=status.HTTP_201_CREATED)
+def create_room(
+    payload: RoomCreate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> RoomSummary:
+    group_id = str(uuid.uuid4())
+    group = UserGroup(id=group_id)
+    db.add(group)
+    db.flush()
+
+    db.merge(
+        UserGroupMember(
+            group_id=group_id,
+            user_id=user_id,
+            role_in_group="owner",
+        )
+    )
+
+    room_id = str(uuid.uuid4())
+    room = ClassRoom(
+        id=room_id,
+        class_id=group_id,
+        created_by_user_id=user_id,
+        name=payload.name,
+        description=payload.description,
+        channel_type=payload.channel_type,
+        data=payload.data or {},
+        meta=payload.meta or {},
+        access_control=payload.access_control or {},
+    )
+    db.add(room)
+    db.add(ClassRoomMember(class_room_id=room_id, user_id=user_id))
+    db.commit()
+    db.refresh(room)
+
+    return _summarize_room(room, member_count=1)
 
 
 def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
@@ -92,6 +150,43 @@ def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "room_access_denied")
 
     return room
+
+
+def _member_count(db: Session, room_id: str) -> int:
+    count = (
+        db.query(func.count(ClassRoomMember.user_id))
+        .filter(ClassRoomMember.class_room_id == room_id)
+        .scalar()
+    )
+    return int(count or 0)
+
+
+@router.post("/rooms/{room_id}/archive", response_model=RoomSummary)
+def archive_room(
+    room_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> RoomSummary:
+    room = _require_room_access(db, room_id, user_id)
+    room.is_archived = True
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return _summarize_room(room, _member_count(db, room_id))
+
+
+@router.post("/rooms/{room_id}/restore", response_model=RoomSummary)
+def restore_room(
+    room_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> RoomSummary:
+    room = _require_room_access(db, room_id, user_id)
+    room.is_archived = False
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return _summarize_room(room, _member_count(db, room_id))
 
 
 class MessageIn(BaseModel):

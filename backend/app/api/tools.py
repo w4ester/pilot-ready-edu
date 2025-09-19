@@ -42,6 +42,7 @@ class ToolOut(BaseModel):
     is_active: bool
     updated_at: int | None = None
     content: str
+    requirements: Optional[str] = None
 
 
 @router.get("", response_model=list[ToolOut])
@@ -65,6 +66,7 @@ def list_tools(
             is_active=tool.is_active,
             updated_at=tool.updated_at,
             content=tool.content,
+            requirements=tool.requirements,
         )
         for tool in items
     ]
@@ -126,6 +128,7 @@ def create_tool(
         is_active=tool.is_active,
         updated_at=tool.updated_at,
         content=tool.content,
+        requirements=tool.requirements,
     )
 
 
