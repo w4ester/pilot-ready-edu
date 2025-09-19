@@ -3,7 +3,7 @@ from __future__ import annotations
 """Tool management endpoints for Creation Station."""
 
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -42,6 +42,20 @@ class ToolOut(BaseModel):
     is_active: bool
     updated_at: int | None = None
     content: str
+
+
+class AssistantMessage(BaseModel):
+    role: Literal["system", "user", "assistant"]
+    content: str = Field(..., min_length=1)
+
+
+class AssistantIn(BaseModel):
+    messages: list[AssistantMessage] = Field(..., min_items=1)
+
+
+class AssistantOut(BaseModel):
+    messages: list[AssistantMessage]
+    suggestions: list[str]
 
 
 @router.get("", response_model=list[ToolOut])
@@ -135,6 +149,53 @@ class PublishIn(BaseModel):
     meta: Dict[str, Any] | None = None
 
 
+def _build_suggestions(messages: list[AssistantMessage]) -> tuple[str, list[str]]:
+    """Return a conversational reply and structured suggestions."""
+
+    last_user_message = ""
+    for message in reversed(messages):
+        if message.role == "user" and message.content.strip():
+            last_user_message = message.content.strip()
+            break
+
+    normalized = last_user_message.lower()
+
+    suggestions: list[str] = []
+    if "test" in normalized or "unit" in normalized:
+        suggestions.append(
+            "Write targeted unit tests with pytest to pin down the expected behaviour before refactoring."
+        )
+    if "optimiz" in normalized or "performance" in normalized or "slow" in normalized:
+        suggestions.append(
+            "Profile the slow sections and consider vectorising loops or caching repeated computations."
+        )
+    if any(keyword in normalized for keyword in ["error", "bug", "exception", "fail"]):
+        suggestions.append(
+            "Add defensive input validation and wrap risky calls in try/except blocks to surface clearer errors."
+        )
+    if "document" in normalized or "explain" in normalized or "docstring" in normalized:
+        suggestions.append(
+            "Document the tool's expected inputs, outputs, and edge cases with a concise docstring."
+        )
+
+    if not suggestions:
+        suggestions.extend(
+            [
+                "Sketch the tool's responsibilities, required inputs, and edge cases before coding.",
+                "Add descriptive logging or print statements while iterating so you can verify behaviour quickly.",
+                "Consider writing a small usage example that demonstrates the happy path once the function is ready.",
+            ]
+        )
+
+    if last_user_message:
+        intro = "Here's how you can move forward based on what you just shared:\n\n"
+    else:
+        intro = "Here are a few ideas to get started with your tool:\n\n"
+
+    reply = intro + "\n".join(f"• {item}" for item in suggestions)
+    return reply, suggestions
+
+
 @router.post("/{tool_id}/versions", status_code=status.HTTP_201_CREATED)
 def publish_version(
     tool_id: str,
@@ -177,6 +238,18 @@ def publish_version(
 class TestRunIn(BaseModel):
     code: str
     input: Dict[str, Any] | None = None
+
+
+@router.post("/assistant", response_model=AssistantOut)
+def tool_assistant(
+    payload: AssistantIn,
+    user_id: str = Depends(get_current_user),
+) -> AssistantOut:
+    del user_id  # Authenticated user required by dependency; not used in stub implementation.
+
+    reply, suggestions = _build_suggestions(payload.messages)
+    message = AssistantMessage(role="assistant", content=reply)
+    return AssistantOut(messages=[message], suggestions=suggestions)
 
 
 @router.post("/test-run")
