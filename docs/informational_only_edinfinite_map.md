@@ -43,7 +43,7 @@ All routes expect `X-Dev-User-Id` during dev, unless noted. JSON responses are P
 
 | Method & Route | Purpose | Request body | Response |
 | --- | --- | --- | --- |
-| `GET /api/v1/tools` | List tools for current user | – | `[ToolOut]` (id, slug, language, content, etc.) |
+| `GET /api/v1/tools` | List tools owned by the caller | – | `[ToolOut]` (id, slug, language, content, etc.) |
 | `POST /api/v1/tools` | Create new tool | `ToolBase` (slug, name, content, optional valves/meta) | `ToolOut` |
 | `POST /api/v1/tools/{tool_id}/versions` | Publish new version | `PublishIn` (content/requirements/meta) | `{tool_id, version}` |
 | `POST /api/v1/tools/test-run` | Stubbed sandbox preview | `TestRunIn` (code + optional input) | `{ok, message}` |
@@ -54,8 +54,8 @@ All routes expect `X-Dev-User-Id` during dev, unless noted. JSON responses are P
 | --- | --- | --- |
 | `GET` | `/api/v1/models` | List models for user; attaches seeds (ELA Planner). |
 | `POST` | `/api/v1/models` | Create model (`ModelIn`). |
-| `POST` | `/api/v1/models/{model_id}/tools` | Attach tools (`AttachPayload.tool_ids`). |
-| `POST` | `/api/v1/models/{model_id}/libraries` | Attach libraries (`AttachPayload.library_ids`). |
+| `POST` | `/api/v1/models/{model_id}/tools` | Attach owned tools (`AttachPayload.tool_ids`; unknown IDs land in `missing`). |
+| `POST` | `/api/v1/models/{model_id}/libraries` | Attach owned libraries (`AttachPayload.library_ids`; unknown IDs land in `missing`). |
 | `POST` | `/api/v1/models/{model_id}/export/ollama` | Returns simple Modelfile text. |
 
 ### 3.3 Prompts (`backend/app/api/prompts.py`)
@@ -76,10 +76,10 @@ All routes expect `X-Dev-User-Id` during dev, unless noted. JSON responses are P
 
 | Method | Route | Description |
 | --- | --- | --- |
-| `GET` | `/api/v1/rooms/{room_id}/messages` | Fetch latest messages (default limit 50). |
-| `POST` | `/api/v1/rooms/{room_id}/messages` | Send message (`MessageIn`). |
-| `POST` | `/api/v1/class_rooms/{room_id}/assistant` | Upsert assistant (stub response). |
-| `POST` | `/api/v1/class_rooms/{room_id}/knowledge` | Attach libraries to room. |
+| `GET` | `/api/v1/rooms/{room_id}/messages` | Fetch latest messages (default limit 50); requires membership. |
+| `POST` | `/api/v1/rooms/{room_id}/messages` | Send message (`MessageIn`); requires membership. |
+| `POST` | `/api/v1/class_rooms/{room_id}/assistant` | Upsert assistant (stub response); requires membership. |
+| `POST` | `/api/v1/class_rooms/{room_id}/knowledge` | Attach owned libraries to room; requires membership (unknown IDs returned in `missing`). |
 
 ## 4. Backend Data Model (ORM highlights)
 

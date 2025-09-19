@@ -116,12 +116,20 @@ def attach_tools(
     if not model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "model_not_found")
 
-    existing_tools = {
-        t.id for t in db.query(CreatedTool).filter(CreatedTool.id.in_(payload.tool_ids)).all()
+    owned_tools = {
+        t.id
+        for t in (
+            db.query(CreatedTool)
+            .filter(CreatedTool.user_id == user_id)
+            .filter(CreatedTool.id.in_(payload.tool_ids))
+            .all()
+        )
     }
-    missing = [tid for tid in payload.tool_ids if tid not in existing_tools]
+    missing = [tid for tid in payload.tool_ids if tid not in owned_tools]
 
-    for idx, tool_id in enumerate(payload.tool_ids, start=1):
+    attachable_tool_ids = [tid for tid in payload.tool_ids if tid in owned_tools]
+
+    for idx, tool_id in enumerate(attachable_tool_ids, start=1):
         db.merge(
             ModelTool(
                 model_id=model_id,
@@ -132,7 +140,7 @@ def attach_tools(
     db.commit()
 
     return {
-        "attached": len(payload.tool_ids),
+        "attached": len(attachable_tool_ids),
         "missing": missing,
     }
 
@@ -155,12 +163,20 @@ def attach_libraries(
     if not model:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "model_not_found")
 
-    existing = {
-        lib.id for lib in db.query(Library).filter(Library.id.in_(payload.library_ids)).all()
+    owned_libraries = {
+        lib.id
+        for lib in (
+            db.query(Library)
+            .filter(Library.user_id == user_id)
+            .filter(Library.id.in_(payload.library_ids))
+            .all()
+        )
     }
-    missing = [lid for lid in payload.library_ids if lid not in existing]
+    missing = [lid for lid in payload.library_ids if lid not in owned_libraries]
 
-    for idx, library_id in enumerate(payload.library_ids, start=1):
+    attachable_library_ids = [lid for lid in payload.library_ids if lid in owned_libraries]
+
+    for idx, library_id in enumerate(attachable_library_ids, start=1):
         db.merge(
             ModelLibrary(
                 model_id=model_id,
@@ -171,7 +187,7 @@ def attach_libraries(
     db.commit()
 
     return {
-        "attached": len(payload.library_ids),
+        "attached": len(attachable_library_ids),
         "missing": missing,
     }
 

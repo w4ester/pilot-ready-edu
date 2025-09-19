@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { loadMonaco } from '$lib/monaco';
 
   let head = 'unknown';
@@ -72,6 +72,11 @@
         minimap: { enabled: false }
       });
     }
+  });
+
+  onDestroy(() => {
+    editorInstance?.dispose();
+    editorInstance = null;
   });
 </script>
 
