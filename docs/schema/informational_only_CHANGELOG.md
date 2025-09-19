@@ -1,5 +1,5 @@
 # Schema Changelog
-
+# informational only
 ## 2025-09-17
 - `document_chunk.embedding` now uses `vector(768)`.
 - ANN index switched from IVFFlat to HNSW (cosine) as `idx_document_chunk_embedding_hnsw`.

@@ -102,7 +102,6 @@ def create_tool(
         entrypoint=payload.entrypoint,
         content=payload.content,
         requirements=payload.requirements,
-        specs=payload.specs or {},
         valves=payload.valves or {},
         meta=payload.meta or {},
         access_control=payload.access_control or {},

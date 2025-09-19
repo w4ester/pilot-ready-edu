@@ -9,7 +9,6 @@ export type ToolPayload = {
   entrypoint?: string;
   content: string;
   requirements?: string;
-  specs?: any;
   valves?: any;
   meta?: any;
   access_control?: any;

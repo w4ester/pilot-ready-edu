@@ -1393,7 +1393,7 @@
     {
       "table_id": 22,
       "table_name": "created_tool",
-      "purpose": "User-created tools with specs, sandboxing, and valves (permissions optional).",
+      "purpose": "User-created tools with sandboxing and valves (permissions optional).",
       "columns": [
         {
           "name": "id",
@@ -2213,7 +2213,7 @@
           "name": "tool_config",
           "type": "jsonb",
           "constraints": "nullable",
-          "description": "Tool specs/valves",
+          "description": "Tool valves",
           "references": ""
         },
         {
