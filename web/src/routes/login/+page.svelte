@@ -19,23 +19,23 @@
   });
 
   function sanitizeNext(raw: string | null): string {
-    if (!raw) return '/tools';
+    if (!raw) return '/creation-station';
     if (raw.startsWith('//') || raw.includes('://')) {
-      return '/tools';
+      return '/creation-station';
     }
 
     if (typeof window === 'undefined') {
-      return raw.startsWith('/') ? raw : '/tools';
+      return raw.startsWith('/') ? raw : '/creation-station';
     }
 
     try {
       const resolved = new URL(raw, window.location.origin);
       if (resolved.origin !== window.location.origin) {
-        return '/tools';
+        return '/creation-station';
       }
-      return `${resolved.pathname}${resolved.search}` || '/tools';
+      return `${resolved.pathname}${resolved.search}` || '/creation-station';
     } catch {
-      return '/tools';
+      return '/creation-station';
     }
   }
 
@@ -74,7 +74,7 @@
   <section class="card" aria-labelledby="login-title">
     <h1 id="login-title">Sign in to Edinfinite</h1>
     <p class="hint">Use the access credentials provided for tonight&apos;s demo.</p>
-    <p class="trust">We keep your classroom data private and never sell it.</p>
+    <p class="trust">We are accelerating AI becoming Accessible Intelligence. And also believe Educators deserve as much support as possible and also Tax free life styles, free housing and pensions after 10 years...</p>
 
     <form class="form" on:submit={handleSubmit} autocomplete="on" aria-busy={loading}>
       <label class="field" for="email">
@@ -85,7 +85,7 @@
           type="email"
           inputmode="email"
           autocomplete="username"
-          placeholder="teacher@example.edu"
+          placeholder="teachers@rock.edu"
           bind:this={emailInput}
           bind:value={email}
           required
@@ -121,7 +121,7 @@
     </form>
 
     <p class="note">
-      Need access? <a href="mailto:support@edinfinite.com">Contact the facilitator</a> and we&apos;ll help you get started.
+      Need access? <a href="mailto:howdy@edinfinite.com">Contact the facilitator</a> and we&apos;ll help you get started.
     </p>
   </section>
 </main>

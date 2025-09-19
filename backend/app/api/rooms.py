@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..db.models import (
@@ -22,6 +23,53 @@ from .deps import get_current_user
 
 
 router = APIRouter(prefix="/api/v1", tags=["rooms"])
+
+
+class RoomSummary(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    member_count: int
+    is_archived: bool
+    created_at: int | None = None
+
+
+@router.get("/rooms", response_model=list[RoomSummary])
+def list_rooms(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> list[RoomSummary]:
+    rooms = (
+        db.query(ClassRoom)
+        .filter(ClassRoom.created_by_user_id == user_id)
+        .order_by(ClassRoom.created_at.desc())
+        .all()
+    )
+    if not rooms:
+        return []
+
+    room_ids = [room.id for room in rooms]
+    counts = dict(
+        db.query(ClassRoomMember.class_room_id, func.count(ClassRoomMember.user_id))
+        .filter(ClassRoomMember.class_room_id.in_(room_ids))
+        .group_by(ClassRoomMember.class_room_id)
+        .all()
+    )
+
+    summaries = []
+    for room in rooms:
+        summaries.append(
+            RoomSummary(
+                id=room.id,
+                name=room.name,
+                description=room.description,
+                member_count=int(counts.get(room.id, 0)),
+                is_archived=room.is_archived,
+                created_at=room.created_at,
+            )
+        )
+
+    return summaries
 
 
 def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:

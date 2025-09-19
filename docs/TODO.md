@@ -1,4 +1,16 @@
-# TODO – Authentication Roadmap
+# TODO
+
+## Database & Backend Naming Consistency
+- [ ] **PRIORITY**: Revisit database table names and backend/app/api/models.py to ensure canonical naming conventions
+- [ ] Update Creation Station frontend to use consistent names matching database schema
+- [ ] Ensure naming consistency flows from database → backend models → API endpoints → frontend
+- [ ] Review and update:
+  - Database: Check if using "rooms" vs "classrooms" vs "class_chat"
+  - Backend models: Align model names with database tables
+  - API endpoints: Ensure endpoint naming matches models
+  - Frontend: Update all references to match backend naming
+
+## Authentication Roadmap
 
 - [ ] Document tonight's manual onboarding flow (pre-create `user_profile` / `user_auth` rows, hash passwords, share credentials securely) so demos stay self-contained.
 - [ ] Weekend: add `/api/v1/auth/signup` gated by invite codes and issue JWT access + refresh tokens (decide HS256 vs RS256, wire env secrets, build rotation + revocation table).
