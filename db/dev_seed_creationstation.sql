@@ -26,7 +26,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO created_tool (
   id, user_id, slug, name, language, entrypoint, content,
   requirements, sandbox_profile, timeout_ms, memory_limit_mb,
-  specs, valves, meta, access_control, created_at, updated_at
+  valves, meta, access_control, created_at, updated_at
 )
 VALUES (
   '22222222-2222-2222-2222-222222222222',
@@ -40,7 +40,6 @@ VALUES (
   'restricted',
   60000,
   512,
-  '{}'::jsonb,
   '{}'::jsonb,
   '{}'::jsonb,
   '{}'::jsonb,
