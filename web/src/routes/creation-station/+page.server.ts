@@ -88,12 +88,12 @@ export const load: PageServerLoad = async (event) => {
       badge: { label: 'Popular', tone: 'accent' },
       accent: 'indigo',
       gradient: ['#6c5cff', '#2a1e80'],
-      icon: '🪄',
+      icon: '✏️',
       countValue: prompts.length,
       countLabel: 'created',
-      meta: [{ icon: '✨', label: '/commands ready' }],
-      disabled: true,
-      statusText: 'Coming Soon'
+      meta: [{ icon: '⚡', label: '/commands ready' }],
+      disabled: false,
+      href: '/creation-station/prompts'
     },
     {
       key: 'tools',
@@ -106,7 +106,7 @@ export const load: PageServerLoad = async (event) => {
       countValue: tools.length,
       countLabel: tools.length === 1 ? 'tool' : 'tools',
       meta: [{ icon: '🛠️', label: 'Tested' }],
-      href: '/tools'
+      href: '/creation-station/tools'
     },
     {
       key: 'models',
@@ -133,8 +133,8 @@ export const load: PageServerLoad = async (event) => {
       countValue: libraries.length,
       countLabel: libraries.length === 1 ? 'library' : 'libraries',
       meta: [{ icon: '📦', label: 'Document syncing' }],
-      disabled: true,
-      statusText: 'Coming Soon'
+      disabled: false,
+      href: '/creation-station/libraries'
     },
     {
       key: 'cards',
@@ -149,16 +149,16 @@ export const load: PageServerLoad = async (event) => {
       statusText: 'In Design'
     },
     {
-      key: 'class-chat',
-      title: 'Class Chat',
-      description: 'Configure collaborative spaces, manage student groups, and control resources.',
+      key: 'rooms',
+      title: 'Rooms',
+      description: 'Configure collaborative spaces to plan and share resources.',
       badge: { label: 'Collaborative', tone: 'neutral' },
       accent: 'blue',
       gradient: ['#6f8cff', '#14204b'],
       icon: '💬',
       meta: [{ icon: '🛡️', label: 'Safe mode' }],
-      disabled: true,
-      statusText: 'Coming Soon'
+      disabled: false,
+      href: '/creation-station/rooms'
     }
   ];
 

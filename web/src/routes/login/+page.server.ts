@@ -3,15 +3,15 @@ import { apiServer } from '$lib/api.server';
 import { redirect } from '@sveltejs/kit';
 
 function sanitizeNext(url: URL, next: string | null): string {
-  if (!next) return '/tools';
+  if (!next) return '/creation-station'
   try {
     const resolved = new URL(next, url.origin);
     if (resolved.origin !== url.origin) {
-      return '/tools';
+      return '/creation-station';
     }
-    return `${resolved.pathname}${resolved.search}` || '/tools';
+    return `${resolved.pathname}${resolved.search}` || '/creation-station';
   } catch {
-    return '/tools';
+    return '/creation-station';
   }
 }
 

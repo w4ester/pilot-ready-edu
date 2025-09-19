@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../app.css";
   import { page } from '$app/stores';
 
   export let data: {
@@ -15,14 +16,11 @@
 <header class="site-header">
   <div class="site-header__glow"></div>
   <div class="site-header__inner">
-    <a class="brand" href="/">
-      <span class="brand__glyph">∞</span>
-      <span class="brand__word">Edinfinite</span>
-    </a>
-    <nav class="nav" aria-label="Primary navigation">
-      <a class:selected={currentPath.startsWith('/creation-station')} href="/creation-station">Creation Station</a>
-      <a class:selected={currentPath.startsWith('/tools')} href="/tools">Tools</a>
-    </nav>
+    {#if !currentPath.startsWith('/creation-station')}
+      <nav class="nav" aria-label="Primary navigation">
+        <a class:selected={currentPath.startsWith('/creation-station')} href="/creation-station">Creation Station</a>
+      </nav>
+    {/if}
     {#if data.user}
       <div class="user-chip" aria-label="Account">
         <div class="user-chip__avatar" aria-hidden="true">{data.user.email?.slice(0, 1)?.toUpperCase() ?? 'U'}</div>
@@ -64,11 +62,11 @@
   .site-header__inner {
     position: relative;
     margin: 0 auto;
-    max-width: 1200px;
+    max-width: 100%;
     padding: 0.9rem clamp(1.5rem, 4vw, 2.75rem);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 1rem;
     color: #f6f8ff;
   }
@@ -106,6 +104,9 @@
     border-radius: 999px;
     padding: 0.32rem 0.45rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .nav a {

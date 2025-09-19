@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  
   export let data: PageData;
 
   let viewMode: 'grid' | 'list' = 'grid';
@@ -13,623 +14,615 @@
   <title>Creation Station · Edinfinite</title>
 </svelte:head>
 
-<main class="creation">
-  <div class="creation__backdrop"></div>
+<main class="creation-station">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <!-- Platform Badge -->
+      <div class="platform-badge">
+        <span class="badge-indicator"></span>
+        <span class="badge-text">AI-Powered Education Platform</span>
+      </div>
 
-  <section class="hero">
-    <div class="hero__glow"></div>
-    <div class="hero__grid"></div>
-    <div class="hero__content">
-      <span class="hero__eyebrow">AI-Powered Education Platform</span>
-      <h1>Creation Station</h1>
-      <p class="hero__subtitle">
-        Build powerful educational resources in seconds with specialized AI assistants tailored for your classroom.
+      <!-- Title -->
+      <h1 class="main-title">Creation Station</h1>
+
+      <!-- Subtitle -->
+      <p class="subtitle">
+        Build powerful educational resources in seconds with specialized AI assistants
       </p>
-      <div class="hero__stats" aria-label="Creation Station metrics">
+
+      <!-- Stats -->
+      <div class="stats-container">
         {#each data.stats as stat}
-          <article class="stat" aria-live="polite">
-            <span class="stat__icon" aria-hidden="true">{stat.icon}</span>
-            <span class="stat__value" title={String(stat.value)}>{stat.display}</span>
-            <span class="stat__label">{stat.label}</span>
-          </article>
+          <div class="stat-item">
+            <div class="stat-value">{stat.display}</div>
+            <div class="stat-label">{stat.label}</div>
+          </div>
         {/each}
       </div>
-    </div>
-
-    <div class="hero__view" role="radiogroup" aria-label="Toggle view mode">
-      <span class="hero__view-label">View</span>
-      <button type="button" class:selected={viewMode === 'grid'} on:click={() => toggleView('grid')} aria-pressed={viewMode === 'grid'}>
-        Grid
-      </button>
-      <button type="button" class:selected={viewMode === 'list'} on:click={() => toggleView('list')} aria-pressed={viewMode === 'list'}>
-        List
-      </button>
     </div>
   </section>
 
-  <section class="tools" aria-labelledby="tools-heading">
-    <header class="tools__header">
-      <div>
-        <h2 id="tools-heading">Creation Tools</h2>
-        <p>Explore assistants and workspace extensions to accelerate lesson building.</p>
-      </div>
-    </header>
-
-    {#if viewMode === 'grid'}
-      <div class="card-grid">
-        {#each data.tiles as tile}
-          <article
-            class={`tool-card tool-card--${tile.accent} ${tile.disabled ? 'tool-card--disabled' : ''}`}
-            style={`--accent-start:${tile.gradient[0]}; --accent-end:${tile.gradient[1]};`}
+  <!-- Tools Section -->
+  <section class="tools-section">
+    <div class="tools-container">
+      <!-- Section Header -->
+      <div class="section-header">
+        <h2 class="section-title">Creation Tools</h2>
+        
+        <!-- View Toggle -->
+        <div class="view-toggle">
+          <button
+            on:click={() => toggleView('grid')}
+            class="toggle-btn {viewMode === 'grid' ? 'active' : ''}"
           >
-            <header class="tool-card__header">
-              <div>
-                <h3>{tile.title}</h3>
+            Grid
+          </button>
+          <button
+            on:click={() => toggleView('list')}
+            class="toggle-btn {viewMode === 'list' ? 'active' : ''}"
+          >
+            List
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards Grid -->
+      {#if viewMode === 'grid'}
+        <div class="cards-grid">
+          {#each data.tiles as tile}
+            <article class="tool-card tool-card-{tile.key}">
+              <!-- Card Header -->
+              <div class="card-header">
+                <div class="card-icon card-icon-{tile.key}">
+                  <span class="icon-emoji">{tile.icon}</span>
+                </div>
+                
                 {#if tile.badge}
-                  <span class={`badge badge--${tile.badge.tone}`}>{tile.badge.label}</span>
+                  <span class="badge badge-{tile.badge.tone}">
+                    {tile.badge.label}
+                  </span>
                 {/if}
               </div>
 
-              <span class="tool-card__icon" aria-hidden="true">{tile.icon}</span>
+              <!-- Title -->
+              <h3 class="card-title">{tile.title}</h3>
 
-              {#if tile.href && !tile.disabled}
-                <a class="tool-card__action" href={tile.href} aria-label={`Open ${tile.title}`}>
-                  <span aria-hidden="true">+</span>
-                </a>
-              {:else}
-                <span class="tool-card__action tool-card__action--muted" aria-hidden="true">+</span>
-              {/if}
-            </header>
+              <!-- Description -->
+              <p class="card-description">
+                {tile.description}
+              </p>
 
-            <p class="tool-card__description">{tile.description}</p>
-
-            <div class="tool-card__meta">
-              {#if tile.countLabel && tile.countValue !== undefined}
-                <span class="tool-card__meta-item"><strong>{tile.countValue}</strong> {tile.countLabel}</span>
-              {/if}
-              {#if tile.meta}
-                {#each tile.meta as meta}
-                  <span class="tool-card__meta-item">
-                    {#if meta.icon}
-                      <span class="tool-card__meta-icon" aria-hidden="true">{meta.icon}</span>
-                    {/if}
-                    <span>{meta.label}</span>
+              <!-- Meta Info -->
+              <div class="card-meta">
+                {#if tile.countValue !== undefined}
+                  <span class="meta-item">
+                    <span class="meta-value">{tile.countValue}</span>
+                    {tile.countLabel}
                   </span>
-                {/each}
-              {/if}
-            </div>
+                {/if}
+                
+                {#if tile.meta}
+                  {#each tile.meta as meta}
+                    <span class="meta-item">
+                      {#if meta.icon}{meta.icon}{/if}
+                      {meta.label}
+                    </span>
+                  {/each}
+                {/if}
+              </div>
 
-            {#if tile.statusText && tile.disabled}
-              <div class="tool-card__status" role="status">{tile.statusText}</div>
-            {/if}
-          </article>
-        {/each}
-      </div>
-    {:else}
-      <ul class="card-list">
-        {#each data.tiles as tile}
-          <li
-            class={`list-item list-item--${tile.accent} ${tile.disabled ? 'list-item--disabled' : ''}`}
-            style={`--accent-start:${tile.gradient[0]}; --accent-end:${tile.gradient[1]};`}
-          >
-            <div class="list-item__text">
-              <h3>{tile.title}</h3>
-              <p>{tile.description}</p>
-              {#if tile.statusText && tile.disabled}
-                <span class="list-item__status">{tile.statusText}</span>
-              {/if}
-            </div>
-            <div class="list-item__meta">
-              <span class="list-item__icon" aria-hidden="true">{tile.icon}</span>
-              {#if tile.countLabel && tile.countValue !== undefined}
-                <span><strong>{tile.countValue}</strong> {tile.countLabel}</span>
-              {/if}
-              {#if tile.meta}
-                {#each tile.meta as meta}
-                  <span>{meta.icon ? `${meta.icon} ` : ''}{meta.label}</span>
-                {/each}
-              {/if}
-            </div>
-            {#if tile.href && !tile.disabled}
-              <a class="list-item__cta" href={tile.href}>Open</a>
-            {:else}
-              <span class="list-item__cta list-item__cta--disabled">Unavailable</span>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    {/if}
+              <!-- Status or Action -->
+              <div class="card-footer">
+                {#if tile.disabled}
+                  <span class="status-text">
+                    {tile.statusText || 'Coming Soon'}
+                  </span>
+                {:else if tile.href}
+                  <a href={tile.href} class="action-link">
+                    <span>Open</span>
+                    <svg class="arrow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                {/if}
+              </div>
+            </article>
+          {/each}
+        </div>
+      {:else}
+        <!-- List View -->
+        <div class="cards-list">
+          {#each data.tiles as tile}
+            <article class="list-item list-item-{tile.key}">
+              <!-- Icon -->
+              <div class="list-icon list-icon-{tile.key}">
+                <span class="icon-emoji">{tile.icon}</span>
+              </div>
+
+              <!-- Content -->
+              <div class="list-content">
+                <div class="list-header">
+                  <h3 class="list-title">{tile.title}</h3>
+                  {#if tile.badge}
+                    <span class="badge badge-{tile.badge.tone}">
+                      {tile.badge.label}
+                    </span>
+                  {/if}
+                </div>
+                
+                <p class="list-description">
+                  {tile.description}
+                </p>
+                
+                <div class="list-meta">
+                  {#if tile.countValue !== undefined}
+                    <span class="meta-item">
+                      <span class="meta-value">{tile.countValue}</span>
+                      {tile.countLabel}
+                    </span>
+                  {/if}
+                  
+                  {#if tile.meta}
+                    {#each tile.meta as meta}
+                      <span class="meta-item">
+                        {#if meta.icon}{meta.icon}{/if}
+                        {meta.label}
+                      </span>
+                    {/each}
+                  {/if}
+                </div>
+              </div>
+
+              <!-- Action -->
+              <div class="list-action">
+                {#if tile.disabled}
+                  <span class="status-text">
+                    {tile.statusText || 'Coming Soon'}
+                  </span>
+                {:else if tile.href}
+                  <a href={tile.href} class="list-action-btn">
+                    <span>Open</span>
+                    <svg class="arrow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                {/if}
+              </div>
+            </article>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </section>
 </main>
 
 <style>
-  :global(body) {
-    background: #050712;
-    color: #f8f9ff;
+  .creation-station {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a0f2e 50%, #0f0f23 100%);
+    color: #fff;
   }
 
-  .creation {
-    position: relative;
-    min-height: calc(100vh - 72px);
-    padding: 3.5rem clamp(1.5rem, 4vw, 4rem) 4.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 3.5rem;
+  /* Hero Section */
+  .hero-section {
+    padding: 4rem 1.5rem 3rem;
   }
 
-  .creation__backdrop {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(140, 98, 255, 0.18), transparent 55%),
-      radial-gradient(circle at 85% 15%, rgba(43, 224, 255, 0.18), transparent 50%),
-      linear-gradient(180deg, rgba(8, 12, 32, 0.92), rgba(8, 11, 22, 0.98));
-    z-index: -2;
-  }
-
-  .creation__backdrop::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="160" height="160" filter="url(%23n)" opacity="0.08"/%3E%3C/svg%3E');
-    opacity: 0.5;
-  }
-
-  .hero {
-    position: relative;
-    border-radius: 28px;
-    padding: clamp(2.75rem, 5vw, 3.5rem) clamp(2.2rem, 5vw, 3.7rem);
-    overflow: hidden;
-    isolation: isolate;
-    border: 1px solid rgba(124, 84, 255, 0.22);
-    box-shadow: 0 60px 120px rgba(24, 15, 48, 0.45);
-  }
-
-  .hero__glow {
-    position: absolute;
-    inset: -40%;
-    background:
-      radial-gradient(circle at 20% 30%, rgba(123, 91, 255, 0.45), transparent 55%),
-      radial-gradient(circle at 80% 25%, rgba(63, 209, 255, 0.25), transparent 60%);
-    z-index: -2;
-  }
-
-  .hero__grid {
-    position: absolute;
-    inset: 0;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity: 0.15;
-    z-index: -1;
-    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
-  }
-
-  .hero__content {
-    max-width: 560px;
-    display: flex;
-    flex-direction: column;
-    gap: 1.35rem;
-  }
-
-  .hero__eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 0.35em;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
-  }
-
-  .hero h1 {
-    margin: 0;
-    font-size: clamp(2.9rem, 5vw, 3.75rem);
-    font-weight: 800;
-    color: #f8f9ff;
-    letter-spacing: 0.01em;
-  }
-
-  .hero__subtitle {
-    margin: 0;
-    font-size: 1.12rem;
-    line-height: 1.6;
-    color: rgba(248, 249, 255, 0.8);
-  }
-
-  .hero__stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1.25rem;
-    margin-top: 0.5rem;
-  }
-
-  .stat {
-    position: relative;
-    border-radius: 20px;
-    padding: 1.2rem 1.35rem;
-    background: rgba(13, 16, 35, 0.32);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 18px 40px rgba(10, 14, 46, 0.35);
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-    column-gap: 0.75rem;
-    row-gap: 0.35rem;
-    align-items: center;
-  }
-
-  .stat::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top, rgba(143, 117, 255, 0.22), transparent 65%);
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
-  .stat__icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.15);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-    grid-row: span 2;
-  }
-
-  .stat__value {
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: #ffffff;
-  }
-
-  .stat__label {
-    font-size: 0.9rem;
-    color: rgba(248, 249, 255, 0.7);
-  }
-
-  .hero__view {
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: rgba(8, 10, 28, 0.6);
-    border-radius: 999px;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 12px 24px rgba(12, 12, 30, 0.35);
-  }
-
-  .hero__view-label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: rgba(255, 255, 255, 0.68);
-  }
-
-  .hero__view button {
-    border: none;
-    border-radius: 999px;
-    padding: 0.32rem 0.95rem;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.55);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease, color 0.25s ease;
-  }
-
-  .hero__view button.selected {
-    background: linear-gradient(135deg, rgba(114, 103, 255, 0.65), rgba(83, 99, 255, 0.48));
-    color: #ffffff;
-    box-shadow: 0 10px 20px rgba(90, 106, 255, 0.35);
-  }
-
-  .tools {
-    max-width: 1200px;
+  .hero-container {
+    max-width: 1400px;
     margin: 0 auto;
-    width: 100%;
+    text-align: center;
   }
 
-  .tools__header {
+  .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 9999px;
+  }
+
+  .badge-indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: #a78bfa;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .badge-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #c4b5fd;
+  }
+
+  .main-title {
+    font-size: 4rem;
+    font-weight: bold;
+    margin: 0 0 1rem;
+    background: linear-gradient(to right, #c4b5fd, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: #9ca3af;
+    max-width: 600px;
+    margin: 0 auto 3rem;
+  }
+
+  .stats-container {
     display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin-bottom: 1.75rem;
+    justify-content: center;
+    gap: 5rem;
+    margin-bottom: 3rem;
   }
 
-  .tools__header h2 {
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #60a5fa;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  /* Tools Section */
+  .tools-section {
+    padding: 0 2rem 5rem;
+  }
+
+  .tools-container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
     margin: 0;
-    font-size: 1.85rem;
-    color: #eef2ff;
-    letter-spacing: 0.01em;
   }
 
-  .tools__header p {
-    margin: 0;
-    color: rgba(226, 231, 255, 0.72);
+  .view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    border-radius: 0.5rem;
   }
 
-  .card-grid {
+  .toggle-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn.active {
+    background: #7c3aed;
+    color: white;
+  }
+
+  .toggle-btn:hover:not(.active) {
+    color: white;
+  }
+
+  /* Cards Grid */
+  .cards-grid {
     display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
   }
 
   .tool-card {
     position: relative;
-    background: linear-gradient(140deg, rgba(8, 10, 26, 0.82), rgba(13, 16, 39, 0.92));
-    border-radius: 26px;
-    padding: 1.9rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 35px 65px rgba(5, 6, 18, 0.6);
+    padding: 2rem;
+    min-height: 280px;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: rgba(17, 24, 39, 0.5);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s, border-color 0.3s;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    overflow: hidden;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-  }
-
-  .tool-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.15), transparent 55%);
-    opacity: 0.6;
-  }
-
-  .tool-card::after {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-    opacity: 0.28;
-    filter: blur(18px);
-    z-index: -1;
   }
 
   .tool-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 45px 85px rgba(5, 6, 20, 0.65);
+    transform: scale(1.02);
+    border-color: rgba(139, 92, 246, 0.4);
   }
 
-  .tool-card--disabled {
-    opacity: 0.82;
-  }
+  .tool-card-prompts { background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1)); }
+  .tool-card-tools { background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(244, 114, 182, 0.1)); }
+  .tool-card-models { background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1)); }
+  .tool-card-libraries { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1)); }
+  .tool-card-cards { background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 191, 36, 0.1)); }
+  .tool-card-class-chat { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1)); }
 
-  .tool-card__header {
+  .card-header {
     display: flex;
     justify-content: space-between;
-    gap: 1rem;
     align-items: flex-start;
+    margin-bottom: 1rem;
   }
 
-  .tool-card__header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: #ffffff;
-  }
-
-  .tool-card__icon {
-    display: inline-flex;
+  .card-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    font-size: 1.5rem;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05));
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 24px rgba(0, 0, 0, 0.15);
+    border-radius: 1rem;
+    font-size: 1.75rem;
   }
+
+  .card-icon-prompts { background: linear-gradient(135deg, #a78bfa, #6366f1); }
+  .card-icon-tools { background: linear-gradient(135deg, #f472b6, #ec4899); }
+  .card-icon-models { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+  .card-icon-libraries { background: linear-gradient(135deg, #10b981, #14b8a6); }
+  .card-icon-cards { background: linear-gradient(135deg, #fb923c, #fbbf24); }
+  .card-icon-class-chat { background: linear-gradient(135deg, #3b82f6, #6366f1); }
 
   .badge {
-    display: inline-block;
-    margin-top: 0.35rem;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    border: 1px solid;
   }
 
-  .badge--accent { background: rgba(142, 95, 255, 0.25); color: #d7c8ff; }
-  .badge--info { background: rgba(76, 201, 240, 0.2); color: #9ce6ff; }
-  .badge--warning { background: rgba(255, 184, 77, 0.25); color: #ffe0ab; }
-  .badge--neutral { background: rgba(148, 163, 184, 0.25); color: #d2d9e6; }
-
-  .tool-card__action {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.18);
-    display: grid;
-    place-items: center;
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.4rem;
-    transition: transform 0.2s ease, background 0.2s ease;
+  .badge-accent {
+    background: rgba(139, 92, 246, 0.3);
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.5);
   }
 
-  .tool-card__action:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.28);
+  .badge-info {
+    background: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.5);
   }
 
-  .tool-card__action--muted {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.4);
-    cursor: default;
+  .badge-warning {
+    background: rgba(251, 191, 36, 0.3);
+    color: #fde047;
+    border-color: rgba(251, 191, 36, 0.5);
   }
 
-  .tool-card__description {
-    margin: 0;
-    color: rgba(244, 245, 255, 0.82);
+  .badge-neutral {
+    background: rgba(107, 114, 128, 0.3);
+    color: #d1d5db;
+    border-color: rgba(107, 114, 128, 0.5);
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 0 0.75rem;
+  }
+
+  .card-description {
+    font-size: 0.9375rem;
+    color: #9ca3af;
     line-height: 1.6;
-    min-height: 3.6rem;
-    font-size: 0.98rem;
+    margin: 0 0 1.5rem;
+    flex-grow: 1;
   }
 
-  .tool-card__meta {
+  .card-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem 1.1rem;
-    color: rgba(232, 235, 255, 0.72);
-    font-size: 0.9rem;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
   }
 
-  .tool-card__meta-item {
-    display: inline-flex;
+  .meta-item {
+    display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
-  .tool-card__meta-icon {
-    display: inline-flex;
+  .meta-value {
+    color: white;
+    font-weight: 600;
   }
 
-  .tool-card__status {
+  .card-footer {
+    padding-top: 1.25rem;
     margin-top: auto;
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .status-text {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .action-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    padding: 0.3rem 0.75rem;
-    align-self: flex-start;
+    gap: 0.5rem;
+    color: #a78bfa;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
   }
 
-  .tool-card__status::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.6);
+  .action-link:hover {
+    color: #c4b5fd;
   }
 
-  .card-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .arrow-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  /* List View */
+  .cards-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
   .list-item {
-    position: relative;
-    background: linear-gradient(120deg, rgba(11, 13, 29, 0.82), rgba(13, 16, 36, 0.88));
-    border-radius: 22px;
-    padding: 1.6rem 1.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 1.2rem;
-    align-items: center;
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .list-item::after {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-    opacity: 0.22;
-    filter: blur(18px);
-    z-index: -1;
-  }
-
-  .list-item__text h3 {
-    margin: 0 0 0.4rem;
-    color: #ffffff;
-  }
-
-  .list-item__text p {
-    margin: 0;
-    color: rgba(232, 234, 255, 0.75);
-  }
-
-  .list-item__status {
-    margin-top: 0.5rem;
-    display: inline-block;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 0.85rem;
-  }
-
-  .list-item__meta {
     display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    color: rgba(232, 235, 255, 0.72);
-    font-size: 0.9rem;
-  }
-
-  .list-item__icon {
-    font-size: 1.5rem;
-    display: inline-flex;
-  }
-
-  .list-item__meta span {
-    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-  }
-
-  .list-item__cta {
-    padding: 0.5rem 1.1rem;
-    border-radius: 12px;
-    text-decoration: none;
-    background: rgba(255, 255, 255, 0.18);
-    color: #ffffff;
-    font-weight: 600;
-  }
-
-  .list-item__cta--disabled {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  .list-item--disabled .list-item__icon {
-    opacity: 0.55;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: rgba(17, 24, 39, 0.5);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s, border-color 0.3s;
   }
 
   .list-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 28px 48px rgba(6, 7, 18, 0.55);
+    transform: translateX(0.5rem);
+    border-color: rgba(139, 92, 246, 0.4);
   }
 
-  @media (max-width: 960px) {
-    .hero {
-      padding: 2.25rem;
-    }
+  .list-item-prompts { background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.05)); }
+  .list-item-tools { background: linear-gradient(90deg, rgba(236, 72, 153, 0.1), rgba(244, 114, 182, 0.05)); }
+  .list-item-models { background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.05)); }
+  .list-item-libraries { background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.05)); }
+  .list-item-cards { background: linear-gradient(90deg, rgba(251, 146, 60, 0.1), rgba(251, 191, 36, 0.05)); }
+  .list-item-class-chat { background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05)); }
 
-    .hero__view {
-      position: static;
-      margin-top: 1.5rem;
+  .list-icon {
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    font-size: 1.5rem;
+  }
+
+  .list-icon-prompts { background: linear-gradient(135deg, #a78bfa, #6366f1); }
+  .list-icon-tools { background: linear-gradient(135deg, #f472b6, #ec4899); }
+  .list-icon-models { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+  .list-icon-libraries { background: linear-gradient(135deg, #10b981, #14b8a6); }
+  .list-icon-cards { background: linear-gradient(135deg, #fb923c, #fbbf24); }
+  .list-icon-class-chat { background: linear-gradient(135deg, #3b82f6, #6366f1); }
+
+  .list-content {
+    flex: 1;
+  }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .list-title {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .list-description {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    margin: 0 0 0.75rem;
+  }
+
+  .list-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .list-action {
+    flex-shrink: 0;
+  }
+
+  .list-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 0.5rem;
+    color: #a78bfa;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .list-action-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    color: #c4b5fd;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
     }
   }
 
-  @media (max-width: 720px) {
-    .list-item {
+  @media (max-width: 1280px) {
+    .cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .main-title {
+      font-size: 2.5rem;
+    }
+
+    .stats-container {
+      gap: 1.5rem;
+    }
+
+    .cards-grid {
       grid-template-columns: 1fr;
-      text-align: left;
-      gap: 0.8rem;
     }
 
-    .hero__stats {
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    .list-item {
+      flex-direction: column;
+      text-align: center;
     }
   }
 </style>
