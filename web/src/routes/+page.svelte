@@ -88,6 +88,7 @@
     {#if error}
       <p class="error">{error}</p>
     {/if}
+    <a class="login-link" href="/login">Sign in</a>
     <div class="actions" aria-label="Artifact sandbox controls">
       <button type="button" on:click={() => loadSnippet('lesson-plan')}>
         Lesson plan template
@@ -133,6 +134,13 @@
 
   .error {
     color: #b00020;
+  }
+
+  .login-link {
+    align-self: flex-start;
+    text-decoration: none;
+    font-weight: 600;
+    color: #4a6cf7;
   }
 
   .actions {

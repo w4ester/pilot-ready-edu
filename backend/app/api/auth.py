@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 from typing import Final
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -45,7 +46,7 @@ def login(
 ) -> LoginResponse:
     """Authenticate a user with email/password and start a session."""
 
-    normalized_email = payload.email.strip()
+    normalized_email = payload.email.strip().lower()
     user = (
         db.query(UserAuth)
         .filter(UserAuth.email == normalized_email)
@@ -80,16 +81,19 @@ def login(
             detail="invalid_credentials",
         )
 
-    # Successful login: reset counters and establish session.
+    # Successful login: reset counters, rotate nonce, and establish session.
     user.failed_attempts = 0
     user.locked_until = None
     user.last_login_at = now_ms
     user.updated_at = now_ms
+    new_session_nonce = secrets.token_hex(16)
+    user.session_nonce = new_session_nonce
     db.commit()
 
     request.session.clear()
     request.session["user_id"] = user.id
     request.session["auth_method"] = user.auth_method or "password"
+    request.session["nv"] = new_session_nonce
 
     return LoginResponse(
         user_id=user.id,
