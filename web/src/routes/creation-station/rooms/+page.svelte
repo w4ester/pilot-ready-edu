@@ -1,29 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI } from '$lib/api.creationstation';
-  
-  interface Room {
-    id: string;
-    name: string;
-    description?: string;
-    user_count: number;
-    active_rooms: number;
-    is_archived: boolean;
-    safe_mode_enabled: boolean;
-    created_at?: string;
-    updated_at?: string;
-  }
-  
-  let rooms: Room[] = [];
+  import { creationAPI, type RoomSummary } from '$lib/api.creationstation';
+
+  let rooms: RoomSummary[] = [];
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
-  
-  $: filteredRooms = rooms.filter(room => 
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
+
+  const formatTimestamp = (value?: number | null) =>
+    typeof value === 'number' ? new Date(value).toLocaleString() : '—';
+
+  $: filteredRooms = rooms.filter((room) => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      (room.name ?? '').toLowerCase().includes(term) ||
+      room.id.toLowerCase().includes(term)
+    );
+  });
+
   onMount(async () => {
     try {
       rooms = await creationAPI.rooms.list();
@@ -33,15 +28,13 @@
       loading = false;
     }
   });
-  
+
   async function archiveRoom(id: string) {
     if (!confirm(`Are you sure you want to archive room "${id}"?`)) return;
-    
+
     try {
-      await creationAPI.rooms.archive(id);
-      rooms = rooms.map(c => 
-        c.id === id ? { ...c, is_archived: true } : c
-      );
+      const archived = await creationAPI.rooms.archive(id);
+      rooms = rooms.map((room) => (room.id === id ? archived : room));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to archive room');
     }
@@ -131,13 +124,6 @@
                   <span class="status-badge active">Active</span>
                 {/if}
               </div>
-              {#if room.safe_mode_enabled}
-                <div class="safe-mode-indicator" title="Safe Mode Enabled">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                </div>
-              {/if}
             </div>
             
             {#if room.description}
@@ -152,19 +138,19 @@
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span>{room.user_count} users</span>
+                <span>{room.member_count} members</span>
               </div>
               <div class="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  <path d="M12 8v4l3 3"/>
+                  <circle cx="12" cy="12" r="9"/>
                 </svg>
-                <span>{room.active_rooms} active rooms</span>
+                <span>Created {formatTimestamp(room.created_at)}</span>
               </div>
             </div>
             
             <div class="room-actions">
-              <a href="/creation-station/room/{room.id}/manage" class="btn-manage">
+              <a href={`/creation-station/rooms/${room.id}`} class="btn-manage">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="3"/>
                   <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 9.96l4.24 4.24M18.36 14.18l4.24 4.24M1.54 14.18l4.24-4.24"/>
@@ -179,14 +165,6 @@
                     <line x1="10" y1="12" x2="14" y2="12"/>
                   </svg>
                   Archive
-                </button>
-              {:else}
-                <button class="btn-restore">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 4 23 10 17 10"/>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                  </svg>
-                  Restore
                 </button>
               {/if}
             </div>

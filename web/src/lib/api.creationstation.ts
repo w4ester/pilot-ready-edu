@@ -25,6 +25,44 @@ export type ModelPayload = {
   access_control?: any;
 };
 
+export type RoomSummary = {
+  id: string;
+  name: string;
+  description?: string | null;
+  member_count: number;
+  is_archived: boolean;
+  created_at?: number | null;
+};
+
+export type RoomCreatePayload = {
+  name: string;
+  description?: string;
+  channel_type?: string;
+  data?: Record<string, any>;
+  meta?: Record<string, any>;
+  access_control?: Record<string, any>;
+  member_ids?: string[];
+};
+
+export type RoomUpdatePayload = Partial<Omit<RoomCreatePayload, 'member_ids'>>;
+
+export type RoomMessageIn = {
+  content: string;
+  parent_id?: string | null;
+  target_user_id?: string | null;
+  data?: Record<string, any>;
+  meta?: Record<string, any>;
+};
+
+export type RoomMessageOut = {
+  id: string;
+  user_id: string;
+  class_room_id: string;
+  content: string;
+  created_at?: number | null;
+  parent_id?: string | null;
+};
+
 export const creationAPI = {
   prompts: {
     list: () => api.get<any[]>('/api/v1/prompts'),
@@ -48,5 +86,16 @@ export const creationAPI = {
   },
   libraries: {
     list: () => api.get<any[]>('/api/v1/libraries'),
+  },
+  rooms: {
+    list: () => api.get<RoomSummary[]>('/api/v1/rooms'),
+    create: (body: RoomCreatePayload) => api.post<RoomSummary>('/api/v1/rooms', body),
+    update: (roomId: string, body: RoomUpdatePayload) => api.patch<RoomSummary>(`/api/v1/rooms/${roomId}`, body),
+    archive: (roomId: string) => api.post<RoomSummary>(`/api/v1/rooms/${roomId}/archive`, {}),
+    remove: (roomId: string) => api.delete<void>(`/api/v1/rooms/${roomId}`),
+    messages: {
+      list: (roomId: string, limit = 50) => api.get<RoomMessageOut[]>(`/api/v1/rooms/${roomId}/messages?limit=${limit}`),
+      post: (roomId: string, body: RoomMessageIn) => api.post<RoomMessageOut>(`/api/v1/rooms/${roomId}/messages`, body),
+    },
   },
 };
