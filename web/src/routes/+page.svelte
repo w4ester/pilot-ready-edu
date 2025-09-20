@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { loadMonaco } from '$lib/monaco';
+  import { onMount } from 'svelte';
+  import MonacoEditor from '$lib/components/MonacoEditor.svelte';
 
   let head = 'unknown';
   let status = 'loading';
   let error: string | null = null;
-  let editorContainer: HTMLDivElement | null = null;
   let editorInstance: import('monaco-editor').editor.IStandaloneCodeEditor | null = null;
+  const initialEditorValue = `-- Artifact sandbox\n-- Select a template below to begin drafting.`;
 
   const artifactSnippets: Record<string, string> = {
     'lesson-plan': `{
@@ -63,20 +63,6 @@
       status = 'error';
     }
 
-    if (editorContainer) {
-      const monaco = await loadMonaco();
-      editorInstance = monaco.editor.create(editorContainer, {
-        value: `-- Artifact sandbox\n-- Select a template below to begin drafting.`,
-        language: 'json',
-        automaticLayout: true,
-        minimap: { enabled: false }
-      });
-    }
-  });
-
-  onDestroy(() => {
-    editorInstance?.dispose();
-    editorInstance = null;
   });
 </script>
 
@@ -100,7 +86,9 @@
     <p class="hint">Templates drop into the Monaco editor so you can iterate before saving as an artifact in the main classroom UI.</p>
   </section>
 
-  <section class="editor" bind:this={editorContainer} aria-label="Monaco editor preview"></section>
+  <section class="editor" aria-label="Monaco editor preview">
+    <MonacoEditor bind:instance={editorInstance} language="json" value={initialEditorValue} />
+  </section>
 </main>
 
 <style>
@@ -175,6 +163,11 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(15, 18, 26, 0.12);
+    display: flex;
+  }
+
+  .editor :global(.monaco-editor-root) {
+    flex: 1;
   }
 
   :global(body) {
