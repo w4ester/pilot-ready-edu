@@ -1,5 +1,6 @@
 <script lang="ts">
   import { creationAPI } from '$lib/api.creationstation';
+  import type { ChatMessage } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
   import MonacoEditor from '$lib/components/MonacoEditor.svelte';
 
@@ -12,14 +13,35 @@
   let message: string | null = null;
   let error: string | null = null;
   let submitting = false;
-  
+
   let chatMessage = '';
-  let chatHistory = [
+  let assistantLoading = false;
+  let chatError: string | null = null;
+  let chatHistory: ChatMessage[] = [
     {
       role: 'assistant',
       content: "Hi! I'm ToolForge, your AI assistant for creating powerful educational tools. I can help you write Python functions, suggest integrations, and optimize your code. What kind of tool would you like to create?"
     }
   ];
+
+  const STREAM_DELAY_MS = 20;
+
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const streamAssistantMessage = async (content: string) => {
+    const insertionIndex = chatHistory.length;
+    chatHistory = [...chatHistory, { role: 'assistant', content: '' }];
+
+    const tokens = content.split(/(\s+)/);
+    let assembled = '';
+    for (const token of tokens) {
+      assembled += token;
+      chatHistory = chatHistory.map((message, index) =>
+        index === insertionIndex ? { ...message, content: assembled } : message
+      );
+      await delay(STREAM_DELAY_MS);
+    }
+  };
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -62,17 +84,43 @@
     error = null;
   };
 
-  const sendMessage = () => {
-    if (chatMessage.trim()) {
-      chatHistory = [...chatHistory, { role: 'user', content: chatMessage }];
-      chatMessage = '';
-      // Add AI response logic here
-      setTimeout(() => {
-        chatHistory = [...chatHistory, { 
-          role: 'assistant', 
-          content: "I can help you improve that function! Consider adding error handling and type hints to make your code more robust."
-        }];
-      }, 500);
+  const sendMessage = async () => {
+    const trimmed = chatMessage.trim();
+    if (!trimmed || assistantLoading) {
+      return;
+    }
+
+    const userMessage: ChatMessage = { role: 'user', content: trimmed };
+    chatHistory = [...chatHistory, userMessage];
+    chatMessage = '';
+    chatError = null;
+    assistantLoading = true;
+
+    const historyForRequest = [...chatHistory];
+
+    try {
+      const response = await creationAPI.tools.assistant({ messages: historyForRequest });
+      const assistantMessages = Array.isArray(response?.messages) ? response.messages : [];
+
+      if (assistantMessages.length === 0) {
+        await streamAssistantMessage("I'm thinking, but I don't have any suggestions right now. Try rephrasing your request.");
+        return;
+      }
+
+      for (const assistantMessage of assistantMessages) {
+        await streamAssistantMessage(assistantMessage.content);
+      }
+    } catch (err) {
+      chatError = err instanceof Error ? err.message : 'Failed to fetch assistant suggestions.';
+      chatHistory = [
+        ...historyForRequest,
+        {
+          role: 'assistant',
+          content: 'Sorry, I ran into an issue retrieving suggestions. Please try again.',
+        },
+      ];
+    } finally {
+      assistantLoading = false;
     }
   };
 
@@ -247,16 +295,28 @@
           {/each}
         </div>
 
+        {#if chatError}
+          <div class="chat-error" role="alert">
+            <span aria-hidden="true">⚠️</span>
+            <span>{chatError}</span>
+          </div>
+        {/if}
+
         <div class="chat-input-container">
           <input
             type="text"
             bind:value={chatMessage}
-            on:keydown={(e) => e.key === 'Enter' && sendMessage()}
+            on:keydown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void sendMessage();
+              }
+            }}
             placeholder="Ask ToolForge for help..."
             class="chat-input"
+            disabled={assistantLoading}
           />
-          <button on:click={sendMessage} class="send-btn" aria-label="Send message">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
@@ -652,6 +712,23 @@
     background: rgba(31, 41, 55, 0.7);
   }
 
+  .chat-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .chat-error {
+    margin: 0 1.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
   .send-btn {
     padding: 0.75rem;
     background: #7c3aed;
@@ -665,6 +742,12 @@
   .send-btn:hover {
     background: #6d28d9;
     transform: translateY(-1px);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
 
   @media (max-width: 1024px) {

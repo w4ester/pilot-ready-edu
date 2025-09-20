@@ -136,30 +136,19 @@ export type RoomMessageOut = {
   parent_id?: string | null;
 };
 
+export type ChatMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
+export type AssistantResponse = {
+  messages: ChatMessage[];
+  suggestions: string[];
+};
+
 export const creationAPI = {
   prompts: {
-    list: () => api.get<PromptSummary[]>('/api/v1/prompts'),
-    create: (body: PromptPayload) => api.post<PromptSummary>('/api/v1/prompts', body),
-    update: (id: string, body: Partial<PromptPayload>) => api.put<PromptSummary>(`/api/v1/prompts/${id}`, body),
-    test: (body: { content: string; variables?: Record<string, unknown> }) =>
-      api.post<{ ok: boolean; rendered?: string; error?: string }>('/api/v1/prompts/test', body),
-  },
-  tools: {
-    list: () => api.get<ToolSummary[]>('/api/v1/tools'),
-    create: (body: ToolPayload) => api.post<ToolSummary>('/api/v1/tools', body),
-    publishVersion: (id: string, body: { content: string; requirements?: string }) =>
-      api.post<{ tool_id: string; version: number }>(`/api/v1/tools/${id}/versions`, body),
-    testRun: (body: { code: string; input?: Record<string, unknown> }) =>
-      api.post<{ ok: boolean; message: string }>('/api/v1/tools/test-run', body),
-  },
-  models: {
-    list: () => api.get<ModelSummary[]>('/api/v1/models'),
-    create: (body: ModelPayload) => api.post<ModelSummary>('/api/v1/models', body),
-    attachTools: (id: string, toolIds: string[]) =>
-      api.post<{ attached: number; missing: string[] }>(`/api/v1/models/${id}/tools`, { tool_ids: toolIds }),
-    attachLibraries: (id: string, libraryIds: string[]) =>
-      api.post<{ attached: number; missing: string[] }>(`/api/v1/models/${id}/libraries`, { library_ids: libraryIds }),
-    exportOllama: (id: string) => api.post<{ modelfile: string }>(`/api/v1/models/${id}/export/ollama`, {}),
+
   },
   libraries: {
     list: () => api.get<LibrarySummary[]>('/api/v1/libraries'),
