@@ -5,11 +5,12 @@ from __future__ import annotations
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from ..core.security import utc_now_ms
 from ..db.models import (
     ClassAssistant,
     ClassKnowledge,
@@ -17,6 +18,8 @@ from ..db.models import (
     ClassRoom,
     ClassRoomMember,
     Library,
+    UserGroup,
+    UserGroupMember,
 )
 from ..db.session import get_db
 from .deps import get_current_user
@@ -32,6 +35,67 @@ class RoomSummary(BaseModel):
     member_count: int
     is_archived: bool
     created_at: int | None = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any]
+    meta: Dict[str, Any]
+
+
+def _summarize_room(room: ClassRoom, member_count: int) -> RoomSummary:
+    return RoomSummary(
+        id=room.id,
+        name=room.name,
+        description=room.description,
+        member_count=member_count,
+        is_archived=room.is_archived,
+        created_at=room.created_at,
+        channel_type=room.channel_type,
+        data=room.data or {},
+        meta=room.meta or {},
+    )
+
+
+class RoomCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
+
+
+class RoomCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
+    member_ids: list[str] | None = None
+
+
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
+
+
+def _room_summary(db: Session, room: ClassRoom) -> RoomSummary:
+    member_count = (
+        db.query(func.count(ClassRoomMember.user_id))
+        .filter(ClassRoomMember.class_room_id == room.id)
+        .scalar()
+    )
+    return RoomSummary(
+        id=room.id,
+        name=room.name,
+        description=room.description,
+        member_count=int(member_count or 0),
+        is_archived=room.is_archived,
+        created_at=room.created_at,
+    )
 
 
 @router.get("/rooms", response_model=list[RoomSummary])
@@ -56,20 +120,44 @@ def list_rooms(
         .all()
     )
 
-    summaries = []
-    for room in rooms:
-        summaries.append(
-            RoomSummary(
-                id=room.id,
-                name=room.name,
-                description=room.description,
-                member_count=int(counts.get(room.id, 0)),
-                is_archived=room.is_archived,
-                created_at=room.created_at,
-            )
-        )
 
-    return summaries
+@router.post("/rooms", response_model=RoomSummary, status_code=status.HTTP_201_CREATED)
+def create_room(
+    payload: RoomCreate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> RoomSummary:
+    group_id = str(uuid.uuid4())
+    group = UserGroup(id=group_id)
+    db.add(group)
+    db.flush()
+
+    db.merge(
+        UserGroupMember(
+            group_id=group_id,
+            user_id=user_id,
+            role_in_group="owner",
+        )
+    )
+
+    room_id = str(uuid.uuid4())
+    room = ClassRoom(
+        id=room_id,
+        class_id=group_id,
+        created_by_user_id=user_id,
+        name=payload.name,
+        description=payload.description,
+        channel_type=payload.channel_type,
+        data=payload.data or {},
+        meta=payload.meta or {},
+        access_control=payload.access_control or {},
+    )
+    db.add(room)
+    db.add(ClassRoomMember(class_room_id=room_id, user_id=user_id))
+    db.commit()
+    db.refresh(room)
+
+    return _summarize_room(room, member_count=1)
 
 
 def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:

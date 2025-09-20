@@ -2,6 +2,7 @@
   import { creationAPI } from '$lib/api.creationstation';
   import type { ChatMessage } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
+  import MonacoEditor from '$lib/components/MonacoEditor.svelte';
 
   let slug = '';
   let name = '';
@@ -141,7 +142,7 @@
     <section class="form-panel">
       <header class="panel-header">
         <div class="header-left">
-          <a href="/creation-station/tools" class="back-link">
+          <a href="/creation-station/tools" class="back-link" aria-label="Back to tools">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
@@ -203,14 +204,17 @@
         </div>
 
         <div class="form-group">
-          <label for="content">CODE</label>
-          <textarea 
-            id="content" 
-            bind:value={content} 
-            rows="12"
-            class="form-textarea code-editor"
-            spellcheck="false"
-          ></textarea>
+          <label id="content-label" for="content-editor">CODE</label>
+          <div class="code-editor-wrapper">
+            <MonacoEditor
+              id="content-editor"
+              bind:value={content}
+              language={language}
+              ariaLabel="Tool code editor"
+              ariaLabelledby="content-label"
+              height="360px"
+            />
+          </div>
         </div>
 
         <div class="form-group">
@@ -312,14 +316,7 @@
             class="chat-input"
             disabled={assistantLoading}
           />
-          <button
-            on:click={() => {
-              void sendMessage();
-            }}
-            class="send-btn"
-            disabled={assistantLoading || !chatMessage.trim()}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
@@ -454,6 +451,7 @@
     color: #d1d5db;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    cursor: pointer;
   }
 
   .form-input,
@@ -480,15 +478,43 @@
     background: rgba(31, 41, 55, 0.7);
   }
 
+  .code-editor-wrapper {
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    min-height: 360px;
+    overflow: hidden;
+  }
+
+  .code-editor-wrapper:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+    background: rgba(31, 41, 55, 0.7);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+  }
+
+  .code-editor-wrapper :global(.monaco-editor),
+  .code-editor-wrapper :global(.monaco-editor .overflow-guard) {
+    background-color: transparent !important;
+  }
+
+  .code-editor-wrapper :global(.monaco-editor .margin) {
+    background-color: rgba(17, 24, 39, 0.7);
+  }
+
+  .code-editor-wrapper :global(.monaco-editor .line-numbers) {
+    color: #9ca3af;
+  }
+
+  .code-editor-wrapper :global(.monaco-editor .view-lines) {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+  }
+
   .form-textarea {
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
-  }
-
-  .code-editor {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.875rem;
   }
 
   .form-row {

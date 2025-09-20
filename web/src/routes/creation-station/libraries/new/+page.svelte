@@ -27,12 +27,26 @@
     error = null;
 
     try {
+      const data: Record<string, unknown> = {
+        chunking: {
+          size: chunkSize,
+          overlap: chunkOverlap
+        }
+      };
+      if (files && files.length > 0) {
+        data.files = Array.from(files).map((file) => ({ name: file.name, size: file.size }));
+      }
+
+      const meta: Record<string, unknown> = {};
+      if (slug) {
+        meta.slug = slug;
+      }
+
       await creationAPI.libraries.create({
-        slug,
         name: libraryName,
-        description,
-        chunk_size: chunkSize,
-        chunk_overlap: chunkOverlap
+        description: description || undefined,
+        data,
+        meta
       });
       message = 'Library created successfully.';
       setTimeout(() => {

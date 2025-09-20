@@ -30,6 +30,7 @@ class PromptOut(BaseModel):
     id: str
     command: str
     title: Optional[str] = None
+    content: str
     updated_at: int | None = None
 
 
@@ -45,7 +46,13 @@ def list_prompts(
         .all()
     )
     return [
-        PromptOut(id=p.id, command=p.command, title=p.title, updated_at=p.updated_at)
+        PromptOut(
+            id=p.id,
+            command=p.command,
+            title=p.title,
+            content=p.content,
+            updated_at=p.updated_at,
+        )
         for p in items
     ]
 
@@ -80,7 +87,13 @@ def create_prompt(
     db.add(prompt)
     db.commit()
 
-    return PromptOut(id=prompt.id, command=prompt.command, title=prompt.title, updated_at=prompt.updated_at)
+    return PromptOut(
+        id=prompt.id,
+        command=prompt.command,
+        title=prompt.title,
+        content=prompt.content,
+        updated_at=prompt.updated_at,
+    )
 
 
 class PromptUpdate(BaseModel):
@@ -116,7 +129,13 @@ def update_prompt(
     db.add(prompt)
     db.commit()
 
-    return PromptOut(id=prompt.id, command=prompt.command, title=prompt.title, updated_at=prompt.updated_at)
+    return PromptOut(
+        id=prompt.id,
+        command=prompt.command,
+        title=prompt.title,
+        content=prompt.content,
+        updated_at=prompt.updated_at,
+    )
 
 
 class PromptTestIn(BaseModel):
