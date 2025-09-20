@@ -1,25 +1,31 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI } from '$lib/api.creationstation';
-  
-  interface Library {
-    slug: string;
-    name: string;
-    description?: string;
-    document_count?: number;
-    chunk_count?: number;
-    created_at?: string;
-    updated_at?: string;
-  }
-  
-  let libraries: Library[] = [];
+  import { creationAPI, type LibrarySummary } from '$lib/api.creationstation';
+
+  const slugFor = (library: LibrarySummary) =>
+    typeof library.meta?.slug === 'string' && library.meta.slug ? library.meta.slug : library.id;
+
+  const documentCount = (library: LibrarySummary) => {
+    const value = library.data?.documents;
+    if (typeof value === 'number') return value;
+    if (Array.isArray(value)) return value.length;
+    return undefined;
+  };
+
+  const chunkCount = (library: LibrarySummary) => {
+    const value = library.data?.chunks;
+    if (typeof value === 'number') return value;
+    return undefined;
+  };
+
+  let libraries: LibrarySummary[] = [];
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
-  
-  $: filteredLibraries = libraries.filter(library => 
+
+  $: filteredLibraries = libraries.filter(library =>
     library.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    library.slug.toLowerCase().includes(searchQuery.toLowerCase())
+    slugFor(library).toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   onMount(async () => {
@@ -31,17 +37,6 @@
       loading = false;
     }
   });
-  
-  async function deleteLibrary(slug: string) {
-    if (!confirm(`Are you sure you want to delete library "${slug}"?`)) return;
-    
-    try {
-      await creationAPI.libraries.delete(slug);
-      libraries = libraries.filter(l => l.slug !== slug);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete library');
-    }
-  }
 </script>
 
 <svelte:head>
@@ -122,21 +117,21 @@
             <div class="library-header">
               <h3 class="library-name">{library.name}</h3>
               <div class="library-meta">
-                {#if library.document_count}
-                  <span class="meta-badge">{library.document_count} docs</span>
+                {#if documentCount(library) !== undefined}
+                  <span class="meta-badge">{documentCount(library)} docs</span>
                 {/if}
-                {#if library.chunk_count}
-                  <span class="meta-badge">{library.chunk_count} chunks</span>
+                {#if chunkCount(library) !== undefined}
+                  <span class="meta-badge">{chunkCount(library)} chunks</span>
                 {/if}
               </div>
             </div>
-            
-            <p class="library-slug">{library.slug}</p>
-            
+
+            <p class="library-slug">{slugFor(library)}</p>
+
             {#if library.description}
               <p class="library-description">{library.description}</p>
             {/if}
-            
+
             <div class="library-stats">
               <div class="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -146,7 +141,7 @@
                   <line x1="16" y1="17" x2="8" y2="17"/>
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
-                <span>Documents: {library.document_count || 0}</span>
+                <span>Documents: {documentCount(library) ?? 0}</span>
               </div>
               <div class="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -154,10 +149,10 @@
                   <line x1="9" y1="3" x2="9" y2="21"/>
                   <line x1="15" y1="3" x2="15" y2="21"/>
                 </svg>
-                <span>Chunks: {library.chunk_count || 0}</span>
+                <span>Chunks: {chunkCount(library) ?? 0}</span>
               </div>
             </div>
-            
+
             <div class="library-actions">
               <a href="/creation-station/libraries/{library.slug}/edit" class="btn-edit">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,13 +161,7 @@
                 </svg>
                 Edit
               </a>
-              <button on:click={() => deleteLibrary(library.slug)} class="btn-delete">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Delete
-              </button>
+              <span class="library-id">ID: {library.id}</span>
             </div>
           </div>
         {/each}
@@ -418,11 +407,11 @@
   .library-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
   }
 
-  .btn-edit,
-  .btn-delete {
-    flex: 1;
+  .btn-edit {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -433,9 +422,6 @@
     font-weight: 500;
     transition: all 0.2s;
     cursor: pointer;
-  }
-
-  .btn-edit {
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.3);
     color: #60a5fa;
@@ -447,15 +433,10 @@
     border-color: rgba(59, 130, 246, 0.5);
   }
 
-  .btn-delete {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-  }
-
-  .btn-delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
+  .library-id {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.9);
   }
 
   @media (max-width: 768px) {
