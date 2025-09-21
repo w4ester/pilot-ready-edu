@@ -1,6 +1,7 @@
 <script lang="ts">
   import { creationAPI } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
+  import CreatorChat from '$lib/components/CreatorChat.svelte';
 
   let libraryName = '';
   let slug = '';
@@ -12,13 +13,9 @@
   let error: string | null = null;
   let submitting = false;
   
-  let chatMessage = '';
-  let chatHistory = [
-    {
-      role: 'assistant',
-      content: "Hello! I'm Libby. Let's organize your educational content into a powerful knowledge base. I can help you structure documents, optimize chunks, and set up metadata for better AI retrieval."
-    }
-  ];
+  const assistantIntro =
+    "Hello! I'm Libby. Let's organize your educational content into a powerful knowledge base. I can help you structure documents, optimize chunks, and set up metadata for better AI retrieval.";
+  const quickActions = ['Organize docs', 'Add metadata', 'Optimize chunks'];
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -27,12 +24,26 @@
     error = null;
 
     try {
+      const data: Record<string, unknown> = {
+        chunking: {
+          size: chunkSize,
+          overlap: chunkOverlap
+        }
+      };
+      if (files && files.length > 0) {
+        data.files = Array.from(files).map((file) => ({ name: file.name, size: file.size }));
+      }
+
+      const meta: Record<string, unknown> = {};
+      if (slug) {
+        meta.slug = slug;
+      }
+
       await creationAPI.libraries.create({
-        slug,
         name: libraryName,
-        description,
-        chunk_size: chunkSize,
-        chunk_overlap: chunkOverlap
+        description: description || undefined,
+        data,
+        meta
       });
       message = 'Library created successfully.';
       setTimeout(() => {
@@ -60,26 +71,6 @@
     error = null;
   };
 
-  const sendMessage = () => {
-    if (chatMessage.trim()) {
-      chatHistory = [...chatHistory, { role: 'user', content: chatMessage }];
-      chatMessage = '';
-      // Add AI response logic here
-      setTimeout(() => {
-        chatHistory = [...chatHistory, { 
-          role: 'assistant', 
-          content: "Great question! For educational content, I recommend using smaller chunk sizes (500-1000 tokens) with 10-20% overlap to maintain context while keeping responses focused."
-        }];
-      }, 500);
-    }
-  };
-
-  const quickActions = [
-    'Organize docs',
-    'Add metadata',
-    'Optimize chunks'
-  ];
-  
   let fileInput: HTMLInputElement;
 </script>
 
@@ -235,60 +226,15 @@
     </section>
 
     <!-- Right Panel - Chat -->
-    <section class="chat-panel">
-      <header class="chat-header">
-        <div class="assistant-info">
-          <div class="assistant-avatar">
-            <span>📚</span>
-          </div>
-          <div>
-            <h2>LibraryBuilder</h2>
-            <p>Your knowledge architect</p>
-          </div>
-        </div>
-      </header>
-
-      <div class="quick-actions">
-        {#each quickActions as action}
-          <button class="quick-action-btn">{action}</button>
-        {/each}
-      </div>
-
-      <div class="chat-container">
-        <div class="chat-messages">
-          {#each chatHistory as message}
-            <div class="message message-{message.role}">
-              <div class="message-avatar">
-                {#if message.role === 'assistant'}
-                  <span>AI</span>
-                {:else}
-                  <span>You</span>
-                {/if}
-              </div>
-              <div class="message-content">
-                {message.content}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <div class="chat-input-container">
-          <input
-            type="text"
-            bind:value={chatMessage}
-            on:keydown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Ask LibraryBuilder..."
-            class="chat-input"
-          />
-          <button on:click={sendMessage} class="send-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
+    <CreatorChat
+      helperKey="libraries"
+      assistantName="LibraryBuilder"
+      assistantDescription="Your knowledge architect"
+      assistantAvatar="📚"
+      initialMessage={assistantIntro}
+      quickActions={quickActions}
+      placeholder="Ask LibraryBuilder..."
+    />
   </div>
 </main>
 
@@ -545,7 +491,7 @@
   }
 
   /* Right Panel - Chat Styles */
-  .chat-panel {
+  :global(.chat-panel) {
     background: rgba(17, 24, 39, 0.8);
     border-radius: 1rem;
     border: 1px solid rgba(139, 92, 246, 0.2);
@@ -554,18 +500,18 @@
     overflow: hidden;
   }
 
-  .chat-header {
+  :global(.chat-header) {
     padding: 1.5rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .assistant-info {
+  :global(.assistant-info) {
     display: flex;
     align-items: center;
     gap: 1rem;
   }
 
-  .assistant-avatar {
+  :global(.assistant-avatar) {
     width: 48px;
     height: 48px;
     background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(139, 92, 246, 0.2));
@@ -576,27 +522,27 @@
     font-size: 1.5rem;
   }
 
-  .assistant-info h2 {
+  :global(.assistant-info h2) {
     margin: 0;
     color: white;
     font-size: 1.125rem;
     font-weight: 600;
   }
 
-  .assistant-info p {
+  :global(.assistant-info p) {
     margin: 0.25rem 0 0;
     color: #9ca3af;
     font-size: 0.875rem;
   }
 
-  .quick-actions {
+  :global(.quick-actions) {
     display: flex;
     gap: 0.5rem;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .quick-action-btn {
+  :global(.quick-action-btn) {
     padding: 0.375rem 0.75rem;
     background: rgba(139, 92, 246, 0.1);
     border: 1px solid rgba(139, 92, 246, 0.3);
@@ -608,19 +554,19 @@
     white-space: nowrap;
   }
 
-  .quick-action-btn:hover {
+  :global(.quick-action-btn:hover) {
     background: rgba(139, 92, 246, 0.2);
     border-color: rgba(139, 92, 246, 0.5);
   }
 
-  .chat-container {
+  :global(.chat-container) {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  .chat-messages {
+  :global(.chat-messages) {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
@@ -629,7 +575,7 @@
     gap: 1rem;
   }
 
-  .message {
+  :global(.message) {
     display: flex;
     gap: 0.75rem;
     animation: messageSlide 0.3s ease;
@@ -646,7 +592,7 @@
     }
   }
 
-  .message-avatar {
+  :global(.message-avatar) {
     width: 32px;
     height: 32px;
     background: rgba(139, 92, 246, 0.2);
@@ -660,12 +606,12 @@
     flex-shrink: 0;
   }
 
-  .message-user .message-avatar {
+  :global(.message-user .message-avatar) {
     background: rgba(59, 130, 246, 0.2);
     color: #60a5fa;
   }
 
-  .message-content {
+  :global(.message-content) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -675,18 +621,18 @@
     line-height: 1.5;
   }
 
-  .message-user .message-content {
+  :global(.message-user .message-content) {
     background: rgba(59, 130, 246, 0.1);
   }
 
-  .chat-input-container {
+  :global(.chat-input) {
     display: flex;
     gap: 0.75rem;
     padding: 1.5rem;
     border-top: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .chat-input {
+  :global(.chat-input-field) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -697,17 +643,17 @@
     transition: all 0.2s;
   }
 
-  .chat-input::placeholder {
+  :global(.chat-input-field::placeholder) {
     color: #6b7280;
   }
 
-  .chat-input:focus {
+  :global(.chat-input-field:focus) {
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
     background: rgba(31, 41, 55, 0.7);
   }
 
-  .send-btn {
+  :global(.send-btn) {
     padding: 0.75rem;
     background: #7c3aed;
     border: none;
@@ -717,7 +663,7 @@
     transition: all 0.2s;
   }
 
-  .send-btn:hover {
+  :global(.send-btn:hover) {
     background: #6d28d9;
     transform: translateY(-1px);
   }
@@ -728,7 +674,7 @@
       height: auto;
     }
 
-    .chat-panel {
+    :global(.chat-panel) {
       height: 500px;
     }
   }

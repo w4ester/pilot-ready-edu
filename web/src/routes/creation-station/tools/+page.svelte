@@ -1,26 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI } from '$lib/api.creationstation';
-  
-  interface Tool {
-    slug: string;
-    name: string;
-    language: string;
-    entrypoint: string;
-    content?: string;
-    requirements?: string;
-    created_at?: string;
-    updated_at?: string;
-  }
-  
-  let tools: Tool[] = [];
+  import { creationAPI, type ToolSummary } from '$lib/api.creationstation';
+
+  const preview = (content: string, limit = 160) =>
+    content.length > limit ? `${content.slice(0, limit)}…` : content;
+
+  let tools: ToolSummary[] = [];
   let loading = true;
   let error: string | null = null;
   let deleteError: string | null = null;
   let deletingSlug: string | null = null;
   let searchQuery = '';
-  
-  $: filteredTools = tools.filter(tool => 
+
+  $: filteredTools = tools.filter(tool =>
     tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tool.slug.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -42,20 +34,6 @@
     })();
   });
   
-  async function deleteTool(slug: string) {
-    if (!confirm(`Are you sure you want to delete tool "${slug}"?`)) return;
-    
-    try {
-      deletingSlug = slug;
-      deleteError = null;
-      await creationAPI.tools.delete(slug);
-      await loadTools();
-    } catch (err) {
-      deleteError = err instanceof Error ? err.message : 'Failed to delete tool';
-    } finally {
-      deletingSlug = null;
-    }
-  }
 </script>
 
 <svelte:head>
@@ -168,7 +146,9 @@
                 </span>
               {/if}
             </div>
-            
+
+            <p class="tool-preview">{preview(tool.content)}</p>
+
             <div class="tool-actions">
               <a href="/creation-station/tools/{tool.slug}/edit" class="btn-edit">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -177,17 +157,7 @@
                 </svg>
                 Edit
               </a>
-              <button
-                on:click={() => deleteTool(tool.slug)}
-                class="btn-delete"
-                disabled={deletingSlug === tool.slug}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                {deletingSlug === tool.slug ? 'Deleting…' : 'Delete'}
-              </button>
+
             </div>
           </div>
         {/each}
@@ -435,14 +405,21 @@
     font-size: 0.875rem;
   }
 
+  .tool-preview {
+    margin: 1rem 0;
+    color: rgba(226, 232, 240, 0.8);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
   .tool-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
   }
 
-  .btn-edit,
-  .btn-delete {
-    flex: 1;
+  .btn-edit {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -453,9 +430,6 @@
     font-weight: 500;
     transition: all 0.2s;
     cursor: pointer;
-  }
-
-  .btn-edit {
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.3);
     color: #60a5fa;
@@ -467,15 +441,10 @@
     border-color: rgba(59, 130, 246, 0.5);
   }
 
-  .btn-delete {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-  }
-
-  .btn-delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
+  .tool-id {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.9);
   }
 
   .btn-delete[disabled] {

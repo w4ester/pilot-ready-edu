@@ -35,6 +35,32 @@ class RoomSummary(BaseModel):
     member_count: int
     is_archived: bool
     created_at: int | None = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any]
+    meta: Dict[str, Any]
+
+
+def _summarize_room(room: ClassRoom, member_count: int) -> RoomSummary:
+    return RoomSummary(
+        id=room.id,
+        name=room.name,
+        description=room.description,
+        member_count=member_count,
+        is_archived=room.is_archived,
+        created_at=room.created_at,
+        channel_type=room.channel_type,
+        data=room.data or {},
+        meta=room.meta or {},
+    )
+
+
+class RoomCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    channel_type: Optional[str] = None
+    data: Dict[str, Any] | None = None
+    meta: Dict[str, Any] | None = None
+    access_control: Dict[str, Any] | None = None
 
 
 class RoomCreate(BaseModel):
@@ -94,17 +120,44 @@ def list_rooms(
         .all()
     )
 
-    return [
-        RoomSummary(
-            id=room.id,
-            name=room.name,
-            description=room.description,
-            member_count=int(counts.get(room.id, 0)),
-            is_archived=room.is_archived,
-            created_at=room.created_at,
+
+@router.post("/rooms", response_model=RoomSummary, status_code=status.HTTP_201_CREATED)
+def create_room(
+    payload: RoomCreate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> RoomSummary:
+    group_id = str(uuid.uuid4())
+    group = UserGroup(id=group_id)
+    db.add(group)
+    db.flush()
+
+    db.merge(
+        UserGroupMember(
+            group_id=group_id,
+            user_id=user_id,
+            role_in_group="owner",
         )
-        for room in rooms
-    ]
+    )
+
+    room_id = str(uuid.uuid4())
+    room = ClassRoom(
+        id=room_id,
+        class_id=group_id,
+        created_by_user_id=user_id,
+        name=payload.name,
+        description=payload.description,
+        channel_type=payload.channel_type,
+        data=payload.data or {},
+        meta=payload.meta or {},
+        access_control=payload.access_control or {},
+    )
+    db.add(room)
+    db.add(ClassRoomMember(class_room_id=room_id, user_id=user_id))
+    db.commit()
+    db.refresh(room)
+
+    return _summarize_room(room, member_count=1)
 
 
 def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
@@ -127,138 +180,6 @@ def _require_room_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "room_access_denied")
 
     return room
-
-
-def _require_room_manage_access(db: Session, room_id: str, user_id: str) -> ClassRoom:
-    room = _require_room_access(db, room_id, user_id)
-    if room.created_by_user_id == user_id:
-        return room
-
-    membership = (
-        db.query(UserGroupMember.role_in_group)
-        .filter(
-            UserGroupMember.group_id == room.class_id,
-            UserGroupMember.user_id == user_id,
-        )
-        .first()
-    )
-    if membership and membership.role_in_group in {"teacher", "assistant"}:
-        return room
-
-    raise HTTPException(status.HTTP_403_FORBIDDEN, "room_manage_denied")
-
-
-def _upsert_membership(db: Session, room_id: str, group_id: str, user_id: str, role: str) -> None:
-    db.merge(UserGroupMember(group_id=group_id, user_id=user_id, role_in_group=role))
-    db.merge(ClassRoomMember(class_room_id=room_id, user_id=user_id))
-
-
-@router.post("/rooms", response_model=RoomSummary, status_code=status.HTTP_201_CREATED)
-def create_room(
-    payload: RoomCreate,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> RoomSummary:
-    group_id = str(uuid.uuid4())
-    room_id = str(uuid.uuid4())
-
-    db.add(UserGroup(id=group_id))
-
-    room = ClassRoom(
-        id=room_id,
-        class_id=group_id,
-        created_by_user_id=user_id,
-        name=payload.name,
-        channel_type=payload.channel_type,
-        description=payload.description,
-        data=payload.data or {},
-        meta=payload.meta or {},
-        access_control=payload.access_control or {},
-    )
-    db.add(room)
-
-    _upsert_membership(db, room_id, group_id, user_id, role="teacher")
-
-    extra_member_ids = payload.member_ids or []
-    for member_id in extra_member_ids:
-        if member_id == user_id:
-            continue
-        _upsert_membership(db, room_id, group_id, member_id, role="member")
-
-    db.commit()
-    db.refresh(room)
-
-    return _room_summary(db, room)
-
-
-@router.patch("/rooms/{room_id}", response_model=RoomSummary)
-def update_room(
-    room_id: str,
-    payload: RoomUpdate,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> RoomSummary:
-    room = _require_room_manage_access(db, room_id, user_id)
-
-    changed = False
-    if payload.name is not None:
-        room.name = payload.name
-        changed = True
-    if payload.description is not None:
-        room.description = payload.description
-        changed = True
-    if payload.channel_type is not None:
-        room.channel_type = payload.channel_type
-        changed = True
-    if payload.data is not None:
-        room.data = payload.data
-        changed = True
-    if payload.meta is not None:
-        room.meta = payload.meta
-        changed = True
-    if payload.access_control is not None:
-        room.access_control = payload.access_control
-        changed = True
-
-    if changed:
-        room.updated_at = utc_now_ms()
-        db.add(room)
-        db.commit()
-        db.refresh(room)
-
-    return _room_summary(db, room)
-
-
-@router.post("/rooms/{room_id}/archive", response_model=RoomSummary)
-def archive_room(
-    room_id: str,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> RoomSummary:
-    room = _require_room_manage_access(db, room_id, user_id)
-    if not room.is_archived:
-        room.is_archived = True
-        room.updated_at = utc_now_ms()
-        db.add(room)
-        db.commit()
-        db.refresh(room)
-    return _room_summary(db, room)
-
-
-@router.delete(
-    "/rooms/{room_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    response_class=Response,
-)
-def delete_room(
-    room_id: str,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-) -> None:
-    room = _require_room_manage_access(db, room_id, user_id)
-    db.delete(room)
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class MessageIn(BaseModel):

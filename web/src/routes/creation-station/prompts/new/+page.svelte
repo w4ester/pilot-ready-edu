@@ -1,16 +1,14 @@
 <script lang="ts">
+  import CreatorChat from '$lib/components/CreatorChat.svelte';
+
   let promptTitle = '';
   let slashCommand = '';
   let promptContent = '';
   let accessControl = 'Private - Only me';
-  
-  let chatMessage = '';
-  let chatHistory = [
-    {
-      role: 'assistant',
-      content: "Hi! I'm PromptCrafter, your prompt engineering specialist. I can help you create effective prompts for any educational scenario. What kind of prompt would you like to create today?"
-    }
-  ];
+
+  const assistantIntro =
+    "Hi! I'm PromptCrafter, your prompt engineering specialist. I can help you create effective prompts for any educational scenario. What kind of prompt would you like to create today?";
+  const quickActions = ['Improve clarity', 'Add examples', 'Better structure'];
 
   const handleImport = () => {
     // Import functionality
@@ -22,26 +20,6 @@
     promptContent = '';
     accessControl = 'Private - Only me';
   };
-
-  const sendMessage = () => {
-    if (chatMessage.trim()) {
-      chatHistory = [...chatHistory, { role: 'user', content: chatMessage }];
-      chatMessage = '';
-      // Add AI response logic here
-      setTimeout(() => {
-        chatHistory = [...chatHistory, { 
-          role: 'assistant', 
-          content: "I can help you improve that prompt! Consider adding more specific instructions and examples to make it clearer for the AI."
-        }];
-      }, 500);
-    }
-  };
-
-  const quickActions = [
-    'Improve clarity',
-    'Add examples',
-    'Better structure'
-  ];
 </script>
 
 <svelte:head>
@@ -121,59 +99,15 @@
     </section>
 
     <!-- Right Panel - Chat -->
-    <section class="chat-panel">
-      <header class="chat-header">
-        <div class="assistant-info">
-          <div class="assistant-avatar">
-            <span>✨</span>
-          </div>
-          <div>
-            <h2>PromptCraft</h2>
-            <p>Your prompt engineering assistant</p>
-          </div>
-        </div>
-      </header>
-
-      <div class="quick-actions">
-        {#each quickActions as action}
-          <button class="quick-action-btn">{action}</button>
-        {/each}
-      </div>
-
-      <div class="chat-container">
-        <div class="chat-messages">
-          {#each chatHistory as message}
-            <div class="message message-{message.role}">
-              <div class="message-avatar">
-                {#if message.role === 'assistant'}
-                  <span>AI</span>
-                {:else}
-                  <span>U</span>
-                {/if}
-              </div>
-              <div class="message-content">
-                {message.content}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <div class="chat-input">
-          <input 
-            type="text" 
-            bind:value={chatMessage}
-            placeholder="Ask PromptCraft..."
-            on:keydown={(e) => e.key === 'Enter' && sendMessage()}
-            class="chat-input-field"
-          />
-          <button on:click={sendMessage} class="send-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
+    <CreatorChat
+      helperKey="prompts"
+      assistantName="PromptCraft"
+      assistantDescription="Your prompt engineering assistant"
+      assistantAvatar="✨"
+      initialMessage={assistantIntro}
+      quickActions={quickActions}
+      placeholder="Ask PromptCraft..."
+    />
   </div>
 </main>
 
@@ -344,7 +278,7 @@
   }
 
   /* Right Panel - Chat */
-  .chat-panel {
+  :global(.chat-panel) {
     padding: 2rem;
     background: rgba(10, 10, 20, 0.9);
     display: flex;
@@ -352,17 +286,17 @@
     overflow: hidden;
   }
 
-  .chat-header {
+  :global(.chat-header) {
     margin-bottom: 1.5rem;
   }
 
-  .assistant-info {
+  :global(.assistant-info) {
     display: flex;
     align-items: center;
     gap: 1rem;
   }
 
-  .assistant-avatar {
+  :global(.assistant-avatar) {
     width: 48px;
     height: 48px;
     border-radius: 0.75rem;
@@ -373,26 +307,26 @@
     font-size: 1.5rem;
   }
 
-  .assistant-info h2 {
+  :global(.assistant-info h2) {
     margin: 0;
     font-size: 1.125rem;
     font-weight: bold;
     color: white;
   }
 
-  .assistant-info p {
+  :global(.assistant-info p) {
     margin: 0;
     font-size: 0.875rem;
     color: #9ca3af;
   }
 
-  .quick-actions {
+  :global(.quick-actions) {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
-  .quick-action-btn {
+  :global(.quick-action-btn) {
     padding: 0.5rem 1rem;
     background: rgba(31, 41, 55, 0.8);
     border: 1px solid rgba(75, 85, 99, 0.5);
@@ -403,12 +337,12 @@
     transition: all 0.2s;
   }
 
-  .quick-action-btn:hover {
+  :global(.quick-action-btn:hover) {
     background: rgba(31, 41, 55, 1);
     border-color: rgba(139, 92, 246, 0.3);
   }
 
-  .chat-container {
+  :global(.chat-container) {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -418,20 +352,20 @@
     border: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .chat-messages {
+  :global(.chat-messages) {
     flex: 1;
     overflow-y: auto;
     padding-right: 0.5rem;
     margin-bottom: 1.5rem;
   }
 
-  .message {
+  :global(.message) {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
-  .message-avatar {
+  :global(.message-avatar) {
     width: 32px;
     height: 32px;
     border-radius: 0.5rem;
@@ -443,17 +377,17 @@
     flex-shrink: 0;
   }
 
-  .message-assistant .message-avatar {
+  :global(.message-assistant .message-avatar) {
     background: linear-gradient(135deg, #3b82f6, #6366f1);
     color: white;
   }
 
-  .message-user .message-avatar {
+  :global(.message-user .message-avatar) {
     background: linear-gradient(135deg, #10b981, #14b8a6);
     color: white;
   }
 
-  .message-content {
+  :global(.message-content) {
     flex: 1;
     padding: 0.875rem;
     background: rgba(31, 41, 55, 0.5);
@@ -463,12 +397,12 @@
     line-height: 1.6;
   }
 
-  .chat-input {
+  :global(.chat-input) {
     display: flex;
     gap: 0.75rem;
   }
 
-  .chat-input-field {
+  :global(.chat-input-field) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.8);
@@ -478,16 +412,16 @@
     font-size: 0.9375rem;
   }
 
-  .chat-input-field::placeholder {
+  :global(.chat-input-field::placeholder) {
     color: #6b7280;
   }
 
-  .chat-input-field:focus {
+  :global(.chat-input-field:focus) {
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
   }
 
-  .send-btn {
+  :global(.send-btn) {
     padding: 0.75rem;
     background: #7c3aed;
     border: none;
@@ -500,26 +434,26 @@
     transition: all 0.2s;
   }
 
-  .send-btn:hover {
+  :global(.send-btn:hover) {
     background: #6d28d9;
   }
 
   /* Scrollbar Styles */
-  .chat-messages::-webkit-scrollbar {
+  :global(.chat-messages::-webkit-scrollbar) {
     width: 6px;
   }
 
-  .chat-messages::-webkit-scrollbar-track {
+  :global(.chat-messages::-webkit-scrollbar-track) {
     background: rgba(31, 41, 55, 0.3);
     border-radius: 3px;
   }
 
-  .chat-messages::-webkit-scrollbar-thumb {
+  :global(.chat-messages::-webkit-scrollbar-thumb) {
     background: rgba(139, 92, 246, 0.3);
     border-radius: 3px;
   }
 
-  .chat-messages::-webkit-scrollbar-thumb:hover {
+  :global(.chat-messages::-webkit-scrollbar-thumb:hover) {
     background: rgba(139, 92, 246, 0.5);
   }
 
@@ -528,7 +462,7 @@
       grid-template-columns: 1fr;
     }
 
-    .chat-panel {
+    :global(.chat-panel) {
       display: none;
     }
   }

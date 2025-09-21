@@ -2,22 +2,12 @@
   import { onMount } from 'svelte';
   import { creationAPI, type RoomSummary } from '$lib/api.creationstation';
 
+
   let rooms: RoomSummary[] = [];
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
 
-  const formatTimestamp = (value?: number | null) =>
-    typeof value === 'number' ? new Date(value).toLocaleString() : '—';
-
-  $: filteredRooms = rooms.filter((room) => {
-    const term = searchQuery.trim().toLowerCase();
-    if (!term) return true;
-    return (
-      (room.name ?? '').toLowerCase().includes(term) ||
-      room.id.toLowerCase().includes(term)
-    );
-  });
 
   onMount(async () => {
     try {
@@ -33,10 +23,18 @@
     if (!confirm(`Are you sure you want to archive room "${id}"?`)) return;
 
     try {
-      const archived = await creationAPI.rooms.archive(id);
-      rooms = rooms.map((room) => (room.id === id ? archived : room));
+
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to archive room');
+    }
+  }
+
+  async function restoreRoom(id: string) {
+    try {
+      const updated = await creationAPI.rooms.restore(id);
+      rooms = rooms.map(c => (c.id === id ? updated : c));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to restore room');
     }
   }
 </script>
@@ -123,13 +121,13 @@
                 {:else}
                   <span class="status-badge active">Active</span>
                 {/if}
-              </div>
-            </div>
-            
+
+                
+
             {#if room.description}
               <p class="room-description">{room.description}</p>
             {/if}
-            
+
             <div class="room-stats">
               <div class="stat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -144,11 +142,11 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 8v4l3 3"/>
                   <circle cx="12" cy="12" r="9"/>
-                </svg>
-                <span>Created {formatTimestamp(room.created_at)}</span>
+
+                  
               </div>
             </div>
-            
+
             <div class="room-actions">
               <a href={`/creation-station/rooms/${room.id}`} class="btn-manage">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,6 +164,8 @@
                   </svg>
                   Archive
                 </button>
+
+              
               {/if}
             </div>
           </div>
