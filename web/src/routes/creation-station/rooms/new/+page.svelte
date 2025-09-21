@@ -87,9 +87,18 @@
     try {
       await creationAPI.rooms.create({
         name: roomName,
-        template: selectedTemplate,
-        safety_settings: safetySettings,
-        resources: resources
+        description: selectedTemplate || undefined,
+        channel_type: 'collaboration',
+        data: {
+          active_rooms: activeRooms,
+          study_groups: studyGroups,
+          project_teams: projectTeams,
+        },
+        meta: {
+          resources,
+          safety_settings: safetySettings,
+          quick_actions: quickActions,
+        },
       });
       message = 'Room created successfully.';
       setTimeout(() => {
