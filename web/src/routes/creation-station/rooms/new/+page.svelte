@@ -1,6 +1,7 @@
 <script lang="ts">
   import { creationAPI } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
+  import CreatorChat from '$lib/components/CreatorChat.svelte';
 
   let roomName = '';
   let selectedTemplate = '';
@@ -72,19 +73,10 @@
   };
   
   // Chat with RoomConnect
-  let chatMessage = '';
-  let chatHistory = [
-    {
-      role: 'assistant',
-      content: "Welcome! I'm RoomConnect, your collaborative space architect. I'll help you create the perfect collaborative environment with the right mix of freedom and safety. What type of room are you setting up?"
-    }
-  ];
-  
-  const quickActions = [
-    'Setup groups',
-    'Import roster', 
-    'Safety config'
-  ];
+  const assistantIntro =
+    "Welcome! I'm RoomConnect, your collaborative space architect. I'll help you create the perfect collaborative environment with the right mix of freedom and safety. What type of room are you setting up?";
+
+  const quickActions = ['Setup groups', 'Import roster', 'Safety config'];
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -109,20 +101,6 @@
       submitting = false;
     }
   }
-
-  const sendMessage = () => {
-    if (chatMessage.trim()) {
-      chatHistory = [...chatHistory, { role: 'user', content: chatMessage }];
-      chatMessage = '';
-      // Add AI response logic here
-      setTimeout(() => {
-        chatHistory = [...chatHistory, { 
-          role: 'assistant', 
-          content: "Great choice! For that grade level, I recommend enabling content filtering and setting up smaller study groups of 4-5 students for optimal collaboration."
-        }];
-      }, 500);
-    }
-  };
 
   function toggleResource(key: string) {
     resources[key].enabled = !resources[key].enabled;
@@ -322,64 +300,19 @@
     </section>
 
     <!-- Right Panel - Chat -->
-    <section class="chat-panel">
-      <header class="chat-header">
-        <div class="assistant-info">
-          <div class="assistant-avatar">
-            <span>👨‍🏫</span>
-          </div>
-          <div>
-            <h2>RoomConnect</h2>
-            <p>Your room orchestrator</p>
-          </div>
-        </div>
-      </header>
-
-      <div class="quick-actions">
-        {#each quickActions as action}
-          <button class="quick-action-btn">{action}</button>
-        {/each}
-      </div>
-
-      <div class="quick-templates">
+    <CreatorChat
+      helperKey="rooms"
+      assistantName="RoomConnect"
+      assistantDescription="Your room orchestrator"
+      assistantAvatar="👨‍🏫"
+      initialMessage={assistantIntro}
+      quickActions={quickActions}
+      placeholder="Ask RoomConnect..."
+    >
+      <div slot="beforeMessages" class="quick-templates">
         <button class="template-btn">Room templates</button>
       </div>
-
-      <div class="chat-container">
-        <div class="chat-messages">
-          {#each chatHistory as message}
-            <div class="message message-{message.role}">
-              <div class="message-avatar">
-                {#if message.role === 'assistant'}
-                  <span>AI</span>
-                {:else}
-                  <span>You</span>
-                {/if}
-              </div>
-              <div class="message-content">
-                {message.content}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <div class="chat-input-container">
-          <input
-            type="text"
-            bind:value={chatMessage}
-            on:keydown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Ask RoomConnect..."
-            class="chat-input"
-          />
-          <button on:click={sendMessage} class="send-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
+    </CreatorChat>
   </div>
 </main>
 
@@ -785,7 +718,7 @@
   }
 
   /* Right Panel - Chat Styles */
-  .chat-panel {
+  :global(.chat-panel) {
     background: rgba(17, 24, 39, 0.8);
     border-radius: 1rem;
     border: 1px solid rgba(139, 92, 246, 0.2);
@@ -794,18 +727,18 @@
     overflow: hidden;
   }
 
-  .chat-header {
+  :global(.chat-header) {
     padding: 1.5rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .assistant-info {
+  :global(.assistant-info) {
     display: flex;
     align-items: center;
     gap: 1rem;
   }
 
-  .assistant-avatar {
+  :global(.assistant-avatar) {
     width: 48px;
     height: 48px;
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
@@ -816,27 +749,27 @@
     font-size: 1.5rem;
   }
 
-  .assistant-info h2 {
+  :global(.assistant-info h2) {
     margin: 0;
     color: white;
     font-size: 1.125rem;
     font-weight: 600;
   }
 
-  .assistant-info p {
+  :global(.assistant-info p) {
     margin: 0.25rem 0 0;
     color: #9ca3af;
     font-size: 0.875rem;
   }
 
-  .quick-actions {
+  :global(.quick-actions) {
     display: flex;
     gap: 0.5rem;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .quick-action-btn {
+  :global(.quick-action-btn) {
     padding: 0.375rem 0.75rem;
     background: rgba(139, 92, 246, 0.1);
     border: 1px solid rgba(139, 92, 246, 0.3);
@@ -848,17 +781,17 @@
     white-space: nowrap;
   }
 
-  .quick-action-btn:hover {
+  :global(.quick-action-btn:hover) {
     background: rgba(139, 92, 246, 0.2);
     border-color: rgba(139, 92, 246, 0.5);
   }
 
-  .quick-templates {
+  :global(.quick-templates) {
     padding: 0 1.5rem 1rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .template-btn {
+  :global(.template-btn) {
     padding: 0.375rem 0.75rem;
     background: rgba(20, 184, 166, 0.1);
     border: 1px solid rgba(20, 184, 166, 0.3);
@@ -870,19 +803,19 @@
     transition: all 0.2s;
   }
 
-  .template-btn:hover {
+  :global(.template-btn:hover) {
     background: rgba(20, 184, 166, 0.2);
     border-color: rgba(20, 184, 166, 0.5);
   }
 
-  .chat-container {
+  :global(.chat-container) {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  .chat-messages {
+  :global(.chat-messages) {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
@@ -891,7 +824,7 @@
     gap: 1rem;
   }
 
-  .message {
+  :global(.message) {
     display: flex;
     gap: 0.75rem;
     animation: messageSlide 0.3s ease;
@@ -908,7 +841,7 @@
     }
   }
 
-  .message-avatar {
+  :global(.message-avatar) {
     width: 32px;
     height: 32px;
     background: rgba(139, 92, 246, 0.2);
@@ -922,12 +855,12 @@
     flex-shrink: 0;
   }
 
-  .message-user .message-avatar {
+  :global(.message-user .message-avatar) {
     background: rgba(59, 130, 246, 0.2);
     color: #60a5fa;
   }
 
-  .message-content {
+  :global(.message-content) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -937,18 +870,18 @@
     line-height: 1.5;
   }
 
-  .message-user .message-content {
+  :global(.message-user .message-content) {
     background: rgba(59, 130, 246, 0.1);
   }
 
-  .chat-input-container {
+  :global(.chat-input) {
     display: flex;
     gap: 0.75rem;
     padding: 1.5rem;
     border-top: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .chat-input {
+  :global(.chat-input-field) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -959,17 +892,17 @@
     transition: all 0.2s;
   }
 
-  .chat-input::placeholder {
+  :global(.chat-input-field::placeholder) {
     color: #6b7280;
   }
 
-  .chat-input:focus {
+  :global(.chat-input-field:focus) {
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
     background: rgba(31, 41, 55, 0.7);
   }
 
-  .send-btn {
+  :global(.send-btn) {
     padding: 0.75rem;
     background: #7c3aed;
     border: none;
@@ -979,7 +912,7 @@
     transition: all 0.2s;
   }
 
-  .send-btn:hover {
+  :global(.send-btn:hover) {
     background: #6d28d9;
     transform: translateY(-1px);
   }
@@ -990,7 +923,7 @@
       height: auto;
     }
 
-    .chat-panel {
+    :global(.chat-panel) {
       height: 500px;
     }
   }
