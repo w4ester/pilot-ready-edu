@@ -168,7 +168,8 @@ export const creationAPI = {
     remove: (roomId: string) => api.delete<void>(`/api/v1/rooms/${roomId}`),
     messages: {
       list: (roomId: string, limit = 50) => api.get<RoomMessageOut[]>(`/api/v1/rooms/${roomId}/messages?limit=${limit}`),
-      post: (roomId: string, body: RoomMessageIn) => api.post<RoomMessageOut>(`/api/v1/rooms/${roomId}/messages`, body),
+      create: (roomId: string, body: RoomMessageIn) =>
+        api.post<RoomMessageOut>(`/api/v1/rooms/${roomId}/messages`, body),
     },
   },
 };

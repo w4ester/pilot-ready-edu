@@ -3,6 +3,7 @@
   import type { ChatMessage } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
   import MonacoEditor from '$lib/components/MonacoEditor.svelte';
+  import CreatorChat from '$lib/components/CreatorChat.svelte';
 
   let slug = '';
   let name = '';
@@ -13,16 +14,6 @@
   let message: string | null = null;
   let error: string | null = null;
   let submitting = false;
-
-  let chatMessage = '';
-  let assistantLoading = false;
-  let chatError: string | null = null;
-  let chatHistory: ChatMessage[] = [
-    {
-      role: 'assistant',
-      content: "Hi! I'm ToolForge, your AI assistant for creating powerful educational tools. I can help you write Python functions, suggest integrations, and optimize your code. What kind of tool would you like to create?"
-    }
-  ];
 
   const STREAM_DELAY_MS = 20;
 
@@ -83,54 +74,6 @@
     message = null;
     error = null;
   };
-
-  const sendMessage = async () => {
-    const trimmed = chatMessage.trim();
-    if (!trimmed || assistantLoading) {
-      return;
-    }
-
-    const userMessage: ChatMessage = { role: 'user', content: trimmed };
-    chatHistory = [...chatHistory, userMessage];
-    chatMessage = '';
-    chatError = null;
-    assistantLoading = true;
-
-    const historyForRequest = [...chatHistory];
-
-    try {
-      const response = await creationAPI.tools.assistant({ messages: historyForRequest });
-      const assistantMessages = Array.isArray(response?.messages) ? response.messages : [];
-
-      if (assistantMessages.length === 0) {
-        await streamAssistantMessage("I'm thinking, but I don't have any suggestions right now. Try rephrasing your request.");
-        return;
-      }
-
-      for (const assistantMessage of assistantMessages) {
-        await streamAssistantMessage(assistantMessage.content);
-      }
-    } catch (err) {
-      chatError = err instanceof Error ? err.message : 'Failed to fetch assistant suggestions.';
-      chatHistory = [
-        ...historyForRequest,
-        {
-          role: 'assistant',
-          content: 'Sorry, I ran into an issue retrieving suggestions. Please try again.',
-        },
-      ];
-    } finally {
-      assistantLoading = false;
-    }
-  };
-
-  const quickActions = [
-    'Debug code',
-    'Add error handling',
-    'Optimize performance',
-    'Generate tests'
-  ];
-</script>
 
 <svelte:head>
   <title>New Tool · Creation Station</title>
@@ -257,73 +200,6 @@
       </form>
     </section>
 
-    <!-- Right Panel - Chat -->
-    <section class="chat-panel">
-      <header class="chat-header">
-        <div class="assistant-info">
-          <div class="assistant-avatar">
-            <span>🛠️</span>
-          </div>
-          <div>
-            <h2>ToolForge</h2>
-            <p>Your code assistant</p>
-          </div>
-        </div>
-      </header>
-
-      <div class="quick-actions">
-        {#each quickActions as action}
-          <button class="quick-action-btn">{action}</button>
-        {/each}
-      </div>
-
-      <div class="chat-container">
-        <div class="chat-messages">
-          {#each chatHistory as message}
-            <div class="message message-{message.role}">
-              <div class="message-avatar">
-                {#if message.role === 'assistant'}
-                  <span>AI</span>
-                {:else}
-                  <span>You</span>
-                {/if}
-              </div>
-              <div class="message-content">
-                {message.content}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        {#if chatError}
-          <div class="chat-error" role="alert">
-            <span aria-hidden="true">⚠️</span>
-            <span>{chatError}</span>
-          </div>
-        {/if}
-
-        <div class="chat-input-container">
-          <input
-            type="text"
-            bind:value={chatMessage}
-            on:keydown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void sendMessage();
-              }
-            }}
-            placeholder="Ask ToolForge for help..."
-            class="chat-input"
-            disabled={assistantLoading}
-          />
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
   </div>
 </main>
 
@@ -550,7 +426,7 @@
   }
 
   /* Right Panel - Chat Styles */
-  .chat-panel {
+  :global(.chat-panel) {
     background: rgba(17, 24, 39, 0.8);
     border-radius: 1rem;
     border: 1px solid rgba(139, 92, 246, 0.2);
@@ -564,13 +440,13 @@
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .assistant-info {
+  :global(.assistant-info) {
     display: flex;
     align-items: center;
     gap: 1rem;
   }
 
-  .assistant-avatar {
+  :global(.assistant-avatar) {
     width: 48px;
     height: 48px;
     background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2));
@@ -581,27 +457,27 @@
     font-size: 1.5rem;
   }
 
-  .assistant-info h2 {
+  :global(.assistant-info h2) {
     margin: 0;
     color: white;
     font-size: 1.125rem;
     font-weight: 600;
   }
 
-  .assistant-info p {
+  :global(.assistant-info p) {
     margin: 0.25rem 0 0;
     color: #9ca3af;
     font-size: 0.875rem;
   }
 
-  .quick-actions {
+  :global(.quick-actions) {
     display: flex;
     gap: 0.5rem;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .quick-action-btn {
+  :global(.quick-action-btn) {
     padding: 0.375rem 0.75rem;
     background: rgba(139, 92, 246, 0.1);
     border: 1px solid rgba(139, 92, 246, 0.3);
@@ -613,19 +489,19 @@
     white-space: nowrap;
   }
 
-  .quick-action-btn:hover {
+  :global(.quick-action-btn:hover) {
     background: rgba(139, 92, 246, 0.2);
     border-color: rgba(139, 92, 246, 0.5);
   }
 
-  .chat-container {
+  :global(.chat-container) {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  .chat-messages {
+  :global(.chat-messages) {
     flex: 1;
     padding: 1.5rem;
     overflow-y: auto;
@@ -634,7 +510,7 @@
     gap: 1rem;
   }
 
-  .message {
+  :global(.message) {
     display: flex;
     gap: 0.75rem;
     animation: messageSlide 0.3s ease;
@@ -651,7 +527,7 @@
     }
   }
 
-  .message-avatar {
+  :global(.message-avatar) {
     width: 32px;
     height: 32px;
     background: rgba(139, 92, 246, 0.2);
@@ -665,12 +541,12 @@
     flex-shrink: 0;
   }
 
-  .message-user .message-avatar {
+  :global(.message-user .message-avatar) {
     background: rgba(59, 130, 246, 0.2);
     color: #60a5fa;
   }
 
-  .message-content {
+  :global(.message-content) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -680,18 +556,18 @@
     line-height: 1.5;
   }
 
-  .message-user .message-content {
+  :global(.message-user .message-content) {
     background: rgba(59, 130, 246, 0.1);
   }
 
-  .chat-input-container {
+  :global(.chat-input) {
     display: flex;
     gap: 0.75rem;
     padding: 1.5rem;
     border-top: 1px solid rgba(75, 85, 99, 0.3);
   }
 
-  .chat-input {
+  :global(.chat-input-field) {
     flex: 1;
     padding: 0.75rem;
     background: rgba(31, 41, 55, 0.5);
@@ -702,34 +578,16 @@
     transition: all 0.2s;
   }
 
-  .chat-input::placeholder {
+  :global(.chat-input-field::placeholder) {
     color: #6b7280;
   }
 
-  .chat-input:focus {
+  :global(.chat-input-field:focus) {
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
     background: rgba(31, 41, 55, 0.7);
   }
 
-  .chat-input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .chat-error {
-    margin: 0 1.5rem;
-    padding: 0.75rem 1rem;
-    background: rgba(239, 68, 68, 0.15);
-    color: #fca5a5;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  .send-btn {
     padding: 0.75rem;
     background: #7c3aed;
     border: none;
@@ -739,7 +597,7 @@
     transition: all 0.2s;
   }
 
-  .send-btn:hover {
+  :global(.send-btn:hover) {
     background: #6d28d9;
     transform: translateY(-1px);
   }
@@ -756,7 +614,7 @@
       height: auto;
     }
 
-    .chat-panel {
+    :global(.chat-panel) {
       height: 500px;
     }
   }
