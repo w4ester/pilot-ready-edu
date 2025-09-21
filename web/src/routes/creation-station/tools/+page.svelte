@@ -16,6 +16,8 @@
   let tools: Tool[] = [];
   let loading = true;
   let error: string | null = null;
+  let deleteError: string | null = null;
+  let deletingSlug: string | null = null;
   let searchQuery = '';
   
   $: filteredTools = tools.filter(tool => 
@@ -23,24 +25,35 @@
     tool.slug.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  onMount(async () => {
+  async function loadTools() {
     try {
-      tools = await creationAPI.tools.list();
+      const result = await creationAPI.tools.list();
+      tools = result;
+      error = null;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to load tools';
-    } finally {
-      loading = false;
     }
+  }
+
+  onMount(() => {
+    void (async () => {
+      await loadTools();
+      loading = false;
+    })();
   });
   
   async function deleteTool(slug: string) {
     if (!confirm(`Are you sure you want to delete tool "${slug}"?`)) return;
     
     try {
+      deletingSlug = slug;
+      deleteError = null;
       await creationAPI.tools.delete(slug);
-      tools = tools.filter(t => t.slug !== slug);
+      await loadTools();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete tool');
+      deleteError = err instanceof Error ? err.message : 'Failed to delete tool';
+    } finally {
+      deletingSlug = null;
     }
   }
 </script>
@@ -89,6 +102,17 @@
         class="search-input"
       />
     </div>
+
+    {#if deleteError}
+      <div class="inline-error" role="alert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{deleteError}</span>
+      </div>
+    {/if}
 
     {#if loading}
       <div class="loading-state">
@@ -153,12 +177,16 @@
                 </svg>
                 Edit
               </a>
-              <button on:click={() => deleteTool(tool.slug)} class="btn-delete">
+              <button
+                on:click={() => deleteTool(tool.slug)}
+                class="btn-delete"
+                disabled={deletingSlug === tool.slug}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
-                Delete
+                {deletingSlug === tool.slug ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>
@@ -273,6 +301,23 @@
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
     background: rgba(31, 41, 55, 0.7);
+  }
+
+  .inline-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0 2rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fecaca;
+    font-size: 0.9rem;
+  }
+
+  .inline-error svg {
+    flex-shrink: 0;
   }
 
   .loading-state,
@@ -431,6 +476,16 @@
   .btn-delete:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  .btn-delete[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-delete[disabled]:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
   }
 
   @media (max-width: 768px) {

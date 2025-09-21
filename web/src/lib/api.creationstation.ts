@@ -76,6 +76,7 @@ export const creationAPI = {
     create: (body: ToolPayload) => api.post<any>('/api/v1/tools', body),
     publishVersion: (id: string, body: { content: string }) => api.post<any>(`/api/v1/tools/${id}/versions`, body),
     testRun: (body: { code: string; input?: any }) => api.post<any>('/api/v1/tools/test-run', body),
+    delete: (slug: string) => api.delete<{ slug: string; status: string }>(`/api/v1/tools/${slug}`),
   },
   models: {
     list: () => api.get<any[]>('/api/v1/models'),

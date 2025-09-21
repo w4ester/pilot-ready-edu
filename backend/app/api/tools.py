@@ -44,6 +44,11 @@ class ToolOut(BaseModel):
     content: str
 
 
+class ToolDeleteOut(BaseModel):
+    slug: str
+    status: str = "deleted"
+
+
 @router.get("", response_model=list[ToolOut])
 def list_tools(
     db: Session = Depends(get_db),
@@ -177,6 +182,29 @@ def publish_version(
 class TestRunIn(BaseModel):
     code: str
     input: Dict[str, Any] | None = None
+
+
+@router.delete("/{slug}", response_model=ToolDeleteOut)
+def delete_tool(
+    slug: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+) -> ToolDeleteOut:
+    slug_lower = slug.lower()
+
+    tool = (
+        db.query(CreatedTool)
+        .filter(CreatedTool.user_id == user_id)
+        .filter(func.lower(CreatedTool.slug) == slug_lower)
+        .first()
+    )
+    if not tool:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "tool_not_found")
+
+    db.delete(tool)
+    db.commit()
+
+    return ToolDeleteOut(slug=tool.slug)
 
 
 @router.post("/test-run")
