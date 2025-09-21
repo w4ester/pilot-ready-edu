@@ -59,6 +59,11 @@ class AssistantOut(BaseModel):
     suggestions: list[str]
 
 
+class ToolDeleteOut(BaseModel):
+    slug: str
+    status: str = "deleted"
+
+
 @router.get("", response_model=list[ToolOut])
 def list_tools(
     db: Session = Depends(get_db),
@@ -241,18 +246,6 @@ def publish_version(
 class TestRunIn(BaseModel):
     code: str
     input: Dict[str, Any] | None = None
-
-
-@router.post("/assistant", response_model=AssistantOut)
-def tool_assistant(
-    payload: AssistantIn,
-    user_id: str = Depends(get_current_user),
-) -> AssistantOut:
-    del user_id  # Authenticated user required by dependency; not used in stub implementation.
-
-    reply, suggestions = _build_suggestions(payload.messages)
-    message = AssistantMessage(role="assistant", content=reply)
-    return AssistantOut(messages=[message], suggestions=suggestions)
 
 
 @router.post("/test-run")
