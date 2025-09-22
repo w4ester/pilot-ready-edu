@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { creationAPI } from '$lib/api.creationstation';
+  import { tools } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
 
   let slug = '';
@@ -19,7 +19,7 @@
     error = null;
 
     try {
-      await creationAPI.tools.create({
+      await tools.create({
         slug,
         name,
         language,

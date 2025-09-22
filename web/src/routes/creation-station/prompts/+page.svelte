@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI, type PromptSummary } from '$lib/api.creationstation';
+  import { prompts as promptsAPI, type PromptSummary } from '$lib/api.creationstation';
 
   const preview = (content: string, limit = 160) =>
     content.length > limit ? `${content.slice(0, limit)}…` : content;
@@ -18,7 +18,7 @@
   
   onMount(async () => {
     try {
-      prompts = await creationAPI.prompts.list();
+      prompts = await promptsAPI.list();
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to load prompts';
     } finally {

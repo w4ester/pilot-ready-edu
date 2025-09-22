@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI } from '$lib/api.creationstation';
+  import { tools as toolsAPI } from '$lib/api.creationstation';
 
   let tools: Array<{ id: string; name: string; slug: string; language: string }> = [];
   let status: 'loading' | 'ready' | 'error' = 'loading';
@@ -8,7 +8,7 @@
 
   onMount(async () => {
     try {
-      const data = await creationAPI.tools.list();
+      const data = await toolsAPI.list();
       tools = data ?? [];
       status = 'ready';
     } catch (err) {
