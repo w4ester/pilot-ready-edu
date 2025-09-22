@@ -7,7 +7,19 @@
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
+  let filteredRooms: RoomSummary[] = [];
+  let normalizedQuery = '';
 
+  $: normalizedQuery = searchQuery.trim().toLowerCase();
+  $: filteredRooms = rooms.filter((room) => {
+    if (!normalizedQuery) return true;
+
+    const description = (room.description ?? '').toLowerCase();
+    return (
+      room.name.toLowerCase().includes(normalizedQuery) ||
+      description.includes(normalizedQuery)
+    );
+  });
 
   onMount(async () => {
     try {
@@ -36,6 +48,15 @@
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to restore room');
     }
+  }
+
+  function formatTimestamp(timestamp?: number | null): string {
+    if (!timestamp) {
+      return 'Unknown';
+    }
+
+    const ms = timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp;
+    return new Date(ms).toLocaleString();
   }
 </script>
 
@@ -121,8 +142,8 @@
                 {:else}
                   <span class="status-badge active">Active</span>
                 {/if}
-
-                
+              </div>
+            </div>
 
             {#if room.description}
               <p class="room-description">{room.description}</p>
@@ -142,8 +163,8 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 8v4l3 3"/>
                   <circle cx="12" cy="12" r="9"/>
-
-                  
+                </svg>
+                <span>Created {formatTimestamp(room.created_at)}</span>
               </div>
             </div>
 
@@ -164,8 +185,6 @@
                   </svg>
                   Archive
                 </button>
-
-              
               {/if}
             </div>
           </div>
