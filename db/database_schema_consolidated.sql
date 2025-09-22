@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS user_auth (
   failed_attempts integer NOT NULL DEFAULT 0,
   locked_until bigint,
   auth_method text NOT NULL DEFAULT 'password',
-  requires_password_change boolean NOT NULL DEFAULT false
+  requires_password_change boolean NOT NULL DEFAULT false,
+  session_nonce text NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex')
 );
 CREATE TRIGGER trg_user_auth_updated_at
   BEFORE UPDATE ON user_auth

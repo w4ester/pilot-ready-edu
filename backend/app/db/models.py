@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     Computed,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -44,7 +45,7 @@ class CreatedTool(Base):
     slug = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
     language = Column(Text, nullable=False, server_default=text("'python'"))
-    entrypoint = Column(Text, nullable=False, server_default=text("'run'"))
+    entrypoint = Column(Text, nullable=True)
     content = Column(Text, nullable=False)
     requirements = Column(Text, nullable=True)
     sandbox_profile = Column(Text, nullable=False, server_default=text("'restricted'"))
@@ -205,29 +206,61 @@ class UserChat(Base):
         primary_key=True,
         server_default=text("gen_random_uuid()"),
     )
-    owner_user_id = Column(
+    user_id = Column(
         UUID(as_uuid=False),
         ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    title = Column(Text, nullable=True)
+    conversation = Column(JSONB, nullable=False)
+    share_id = Column(Text, nullable=True, unique=True)
+    archived = Column(Boolean, nullable=False, server_default=text("false"))
+    pinned = Column(Boolean, nullable=False, server_default=text("false"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    folder_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_folder.id", ondelete="SET NULL"),
         nullable=True,
     )
-    channel_type = Column(Text, nullable=False, server_default=text("'direct'"))
-    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
-    __table_args__ = (Index("idx_user_chat_owner", "owner_user_id"),)
+    __table_args__ = (
+        Index("idx_user_chat_user", "user_id"),
+        Index("idx_user_chat_folder", "folder_id"),
+    )
 
 
 class UserChatTag(Base):
     __tablename__ = "user_chat_tag"
 
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    tag_name = Column(Text, nullable=False)
     chat_id = Column(
         UUID(as_uuid=False),
         ForeignKey("user_chat.id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
     )
-    tag = Column(Text, primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index(
+            "ux_user_chat_tag_user_chat_name",
+            user_id,
+            chat_id,
+            func.lower(tag_name),
+            unique=True,
+        ),
+    )
 
 
 class UserTag(Base):
@@ -848,7 +881,7 @@ class CreatedModel(Base):
         ForeignKey("user_profile.id", ondelete="CASCADE"),
         nullable=False,
     )
-    base_model_id = Column(Text, nullable=False, server_default=text("'gpt-oss:20B'"))
+    base_model_id = Column(Text, nullable=True)
     name = Column(Text, nullable=False)
     params = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     meta = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
@@ -1077,7 +1110,22 @@ class ClassKnowledge(Base):
 class UserProfile(Base):
     __tablename__ = "user_profile"
 
-    id = Column(UUID(as_uuid=False), primary_key=True)
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    name = Column(Text, nullable=True)
+    email = Column(CITEXT, nullable=True)
+    role = Column(Text, nullable=True)
+    profile_image_url = Column(Text, nullable=True)
+    last_active_at = Column(BigInteger, nullable=True)
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    api_key = Column(Text, nullable=True, unique=True)
+    settings = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    info = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    oauth_sub = Column(Text, nullable=True, unique=True)
 
 
 class UserAuth(Base):
@@ -1118,7 +1166,9 @@ class UserSettings(Base):
     default_model = Column(
         String(100), nullable=False, server_default=text("'gpt-oss:20B'")
     )
-    default_temperature = Column(Numeric, nullable=False, server_default=text("0.7"))
+    default_temperature = Column(
+        Float(asdecimal=False), nullable=False, server_default=text("0.7")
+    )
     default_max_tokens = Column(Integer, nullable=False, server_default=text("500"))
     embedding_model = Column(
         String(100), nullable=False, server_default=text("'embeddinggemma:300m'")
@@ -1206,6 +1256,9 @@ class UserFolder(Base):
         nullable=False,
     )
     name = Column(Text, nullable=False)
+    items = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    is_expanded = Column(Boolean, nullable=False, server_default=text("false"))
     created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
     updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
 
@@ -1287,7 +1340,31 @@ Index(
 class UserGroup(Base):
     __tablename__ = "user_group"
 
-    id = Column(UUID(as_uuid=False), primary_key=True)
+    id = Column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    owner_user_id = Column(
+        UUID(as_uuid=False),
+        ForeignKey("user_profile.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    data = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    meta = Column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
+    created_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+    updated_at = Column(BigInteger, nullable=False, server_default=_NOW_MS)
+
+    __table_args__ = (
+        Index(
+            "ux_user_group_owner_name",
+            "owner_user_id",
+            func.lower(name),
+            unique=True,
+        ),
+    )
 
 
 class UserGroupMember(Base):
