@@ -7,19 +7,6 @@
   let loading = true;
   let error: string | null = null;
   let searchQuery = '';
-  let filteredRooms: RoomSummary[] = [];
-  let normalizedQuery = '';
-
-  $: normalizedQuery = searchQuery.trim().toLowerCase();
-  $: filteredRooms = rooms.filter((room) => {
-    if (!normalizedQuery) return true;
-
-    const description = (room.description ?? '').toLowerCase();
-    return (
-      room.name.toLowerCase().includes(normalizedQuery) ||
-      description.includes(normalizedQuery)
-    );
-  });
 
   onMount(async () => {
     try {
