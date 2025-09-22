@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { creationAPI } from '$lib/api.creationstation';
+  import { tools } from '$lib/api.creationstation';
   import type { ChatMessage } from '$lib/api.creationstation';
   import { goto } from '$app/navigation';
   import MonacoEditor from '$lib/components/MonacoEditor.svelte';
@@ -41,7 +41,7 @@
     error = null;
 
     try {
-      await creationAPI.tools.create({
+      await tools.create({
         slug,
         name,
         language,

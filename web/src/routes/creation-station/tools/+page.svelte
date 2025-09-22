@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { creationAPI, type ToolSummary } from '$lib/api.creationstation';
+  import { tools as toolsAPI, type ToolSummary } from '$lib/api.creationstation';
 
   const preview = (content: string, limit = 160) =>
     content.length > limit ? `${content.slice(0, limit)}…` : content;
@@ -19,7 +19,7 @@
   
   async function loadTools() {
     try {
-      const result = await creationAPI.tools.list();
+      const result = await toolsAPI.list();
       tools = result;
       error = null;
     } catch (err) {
