@@ -121,16 +121,6 @@ export interface LibrarySummary {
   meta: Record<string, unknown>;
 }
 
-export interface RoomCreatePayload {
-  name: string;
-  description?: string;
-  channel_type?: string;
-  data?: Record<string, unknown>;
-  meta?: Record<string, unknown>;
-  access_control?: Record<string, unknown>;
-  member_ids?: string[];
-}
-
 export interface RoomSummary {
   id: string;
   name: string;
@@ -225,12 +215,13 @@ export const creationAPI = {
   rooms: {
     list: () => api.get<RoomSummary[]>('/api/v1/rooms'),
     create: (body: RoomCreatePayload) => api.post<RoomSummary>('/api/v1/rooms', body),
-    update: (roomId: string, body: RoomUpdatePayload) => api.patch<RoomSummary>(`/api/v1/rooms/${roomId}`, body),
+<
     archive: (roomId: string) => api.post<RoomSummary>(`/api/v1/rooms/${roomId}/archive`, {}),
     restore: (roomId: string) => api.post<RoomSummary>(`/api/v1/rooms/${roomId}/restore`, {}),
     remove: (roomId: string) => api.delete<void>(`/api/v1/rooms/${roomId}`),
     messages: {
-      list: (roomId: string, limit = 50) => api.get<RoomMessageOut[]>(`/api/v1/rooms/${roomId}/messages?limit=${limit}`),
+      list: (roomId: string, limit = 50) =>
+        api.get<RoomMessageOut[]>(`/api/v1/rooms/${roomId}/messages?limit=${limit}`),
       create: (roomId: string, body: RoomMessageIn) =>
         api.post<RoomMessageOut>(`/api/v1/rooms/${roomId}/messages`, body),
     },
