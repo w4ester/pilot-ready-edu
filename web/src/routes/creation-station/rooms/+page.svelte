@@ -8,6 +8,15 @@
   let error: string | null = null;
   let searchQuery = '';
 
+  $: normalizedQuery = searchQuery.trim().toLowerCase();
+  $: filteredRooms = normalizedQuery
+    ? rooms.filter((room) => {
+        const name = room.name?.toLowerCase() ?? '';
+        const description = room.description?.toLowerCase() ?? '';
+        return name.includes(normalizedQuery) || description.includes(normalizedQuery);
+      })
+    : rooms;
+
 
   onMount(async () => {
     try {
